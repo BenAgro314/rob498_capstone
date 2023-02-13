@@ -12,6 +12,9 @@
 - [Challenge Task Page](https://q.utoronto.ca/courses/299314/pages/challenge-tasks-midterm-video-and-final-report?wrap=1)
 
 ## For remote desktop:
+- Connect to Jetson via microusb 
+- ssh rob498@192.168.55.1
+- Enter password
 
 - Run `vnc` on the jetson
 - Run `vncviewer 0.0.0.0:5900` on laptop
