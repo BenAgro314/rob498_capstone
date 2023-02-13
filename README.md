@@ -6,4 +6,5 @@
 - [ROB498 Docker Repo](https://github.com/manx52/ROB498)
 - [ROB498 Docker image](https://hub.docker.com/r/utrarobosoccer/rob498)
 - [Tutorial For Setting up PX4 <-> Nano](https://www.youtube.com/watch?v=Brkk0ZmnGgs)
+- [PX4 VIO docs](https://docs.px4.io/main/en/computer_vision/visual_inertial_odometry.html)
 
