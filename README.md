@@ -10,3 +10,7 @@
 - [Wifi Debugging](https://forums.developer.nvidia.com/t/jetson-nano-wifi/72269/21)
 	- Maybe this command worked: sudo iw dev wlan0 set power_save off
 
+## For remote desktop:
+
+- Run `vnc` on the jetson
+- RUN `vncviewer 0.0.0.0:5900` on laptop
