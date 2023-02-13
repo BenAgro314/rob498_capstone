@@ -9,6 +9,7 @@
 - [PX4 VIO docs](https://docs.px4.io/main/en/computer_vision/visual_inertial_odometry.html)
 - [Wifi Debugging](https://forums.developer.nvidia.com/t/jetson-nano-wifi/72269/21)
 	- Maybe this command worked: sudo iw dev wlan0 set power_save off
+- [Challenge Task Page](https://q.utoronto.ca/courses/299314/pages/challenge-tasks-midterm-video-and-final-report?wrap=1)
 
 ## For remote desktop:
 
