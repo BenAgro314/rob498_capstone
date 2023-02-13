@@ -1,0 +1,6 @@
+devel_space: /home/rob498/catkin_ws/devel
+install: false
+install_space: /home/rob498/catkin_ws/install
+profile: default
+source_space: /home/rob498/catkin_ws/src
+workspace: /home/rob498/catkin_ws
