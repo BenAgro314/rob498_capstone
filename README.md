@@ -13,4 +13,4 @@
 ## For remote desktop:
 
 - Run `vnc` on the jetson
-- RUN `vncviewer 0.0.0.0:5900` on laptop
+- Run `vncviewer 0.0.0.0:5900` on laptop
