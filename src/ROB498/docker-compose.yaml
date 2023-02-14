@@ -1,0 +1,54 @@
+version: "3.3"
+
+# Instructions
+# https://github.com/utra-robosoccer/soccerbot/wiki/Docker
+
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu, compute, utility, graphics]
+
+x-rob498: &rob498 #  <<: *gpu
+  image: utrarobosoccer/rob498
+  privileged: true
+  user: "1000"
+  build:
+    context: .
+    target: builder
+    args:
+      - BUILDKIT_INLINE_CACHE=1
+      - USER=${USER}
+    cache_from:
+      - utrarobosoccer/rob498
+      - utrarobosoccer/soccerbot_dependencies
+  cap_add:
+    - SYS_PTRACE
+    - SYS_NICE
+  pid: "host"
+  security_opt:
+    - seccomp:unconfined
+  # Command that runs when docker-compose pull is executed
+  command:
+    /bin/bash -c "export ROS_MASTER_URI=http://$$(hostname -i):11311 && export ROS_IP=$$(hostname -i)"
+  volumes:
+    - .:/home/$USER/catkin_ws/src/ROB498
+    - .:/home/drone/catkin_ws/src/ROB498
+    - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    - /dev/dri:/dev/dri:rw
+    - /dev/snd:/dev/snd:rw
+    - /var/run/docker.sock:/var/run/docker.sock
+
+services:
+  drone:
+    <<: *rob498
+    # Environmental variables passed into docker
+    environment:
+      PYTHONUNBUFFERED: 1
+      DISPLAY: unix$DISPLAY
+      XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR
+
+

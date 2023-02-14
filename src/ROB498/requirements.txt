@@ -1,0 +1,36 @@
+osrf-pycommon
+pip>=21.0.1
+matplotlib==3.5.3
+numpy>=1.20.2
+roslibpy
+scipy>=1.6.2
+prettytable
+pyserial>=3.5
+transforms3d
+construct==2.10.67
+opencv-python>=4.5.5.62
+shapely
+vispy
+pytest
+protobuf==3.20.2
+keras
+gluoncv
+pre-commit
+timeout_decorator
+pytest-timeout
+pytest-rerunfailures
+ruamel.yaml
+filterpy
+gdown==4.5.4
+
+# object detection
+requests==2.28.1
+ipython==8.4.0
+seaborn
+tensorboard
+Pillow==9.3.0
+tqdm
+gitpython
+psutil==5.9.2; platform_machine == 'x86_64'
+torch==1.13.0+cu117; platform_machine == 'x86_64'
+torchvision==0.14.0+cu117; platform_machine == 'x86_64'
