@@ -26,4 +26,4 @@ run `vncviewer 0.0.0.0:5900`
 
 ## Debugging
 
-- fixing permission error in `bridge_mavros`. sudo chmod 666 /dev/ttyTHS1`
+- fixing permission error in `bridge_mavros`: `sudo chmod 666 /dev/ttyTHS1`
