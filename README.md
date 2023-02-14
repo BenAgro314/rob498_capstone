@@ -11,12 +11,15 @@
 	- Maybe this command worked: sudo iw dev wlan0 set power_save off
 - [Challenge Task Page](https://q.utoronto.ca/courses/299314/pages/challenge-tasks-midterm-video-and-final-report?wrap=1)
 
-## For remote desktop:
+## SSH and Remote Desktop:
 
-Note: this ip address seems to change:
-- Connect to Jetson via microusb 
-- ssh rob498@192.168.55.1
-- Enter password
-
-- Run `vnc` on the jetson
-- Run `vncviewer 0.0.0.0:5900` on laptop
+Put this into your `~/.ssh/config` (make that file if it doesn't exist):
+```
+Host jetson
+    HostName 100.67.79.56 # change this to the ip of the Jetson
+    User rob498
+    LocalForward 5900 localhost:5900
+```
+Then you can do `ssh jetson`, put in the password, and you should have an ssh connection.
+For VNC, run `vnc` on the jetson through an ssh connection, and then on your local machine
+run `vncviewer 0.0.0.0:5900`
