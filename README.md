@@ -23,3 +23,7 @@ Host jetson
 Then you can do `ssh jetson`, put in the password, and you should have an ssh connection.
 For VNC, run `vnc` on the jetson through an ssh connection, and then on your local machine
 run `vncviewer 0.0.0.0:5900`
+
+## Debugging
+
+- fixing permission error in `bridge_mavros`. sudo chmod 666 /dev/ttyTHS1`
