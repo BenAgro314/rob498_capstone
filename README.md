@@ -11,6 +11,9 @@
 	- Maybe this command worked: sudo iw dev wlan0 set power_save off
 - [Challenge Task Page](https://q.utoronto.ca/courses/299314/pages/challenge-tasks-midterm-video-and-final-report?wrap=1)
 
+## SSH Using Jetson's MicroUSB Port
+- ssh rob498@192.168.55.1
+
 ## SSH and Remote Desktop:
 
 Put this into your `~/.ssh/config` (make that file if it doesn't exist):
