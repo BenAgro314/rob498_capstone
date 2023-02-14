@@ -12,7 +12,7 @@
 [36m--[0m Detecting CXX compiler ABI info - done
 [36m--[0m Detecting CXX compile features
 [36m--[0m Detecting CXX compile features - done
-[31m[1mCMake Error[0m at /home/rob498/catkin_ws/src/ROB498/drone/CMakeLists.txt:4 (find_package):
+[31m[1mCMake Error[0m at /home/rob498/catkin_ws/src/VIO/CMakeLists.txt:10 (find_package):
   By not providing "Findcatkin.cmake" in CMAKE_MODULE_PATH this project has
   asked CMake to find a package configuration file provided by "catkin", but
   CMake did not find one.
@@ -30,6 +30,6 @@
 
 
 [36m--[0m Configuring incomplete, errors occurred!
-See also "/home/rob498/catkin_ws/build/ROB498/CMakeFiles/CMakeOutput.log".
-See also "/home/rob498/catkin_ws/build/ROB498/CMakeFiles/CMakeError.log".
-make: *** [Makefile:334: cmake_check_build_system] Error 1
+See also "/home/rob498/catkin_ws/build/px4_realsense_bridge/CMakeFiles/CMakeOutput.log".
+See also "/home/rob498/catkin_ws/build/px4_realsense_bridge/CMakeFiles/CMakeError.log".
+make: *** [Makefile:1993: cmake_check_build_system] Error 1
