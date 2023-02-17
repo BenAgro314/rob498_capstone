@@ -1,8 +1,0 @@
-.*
-cmake-build-debug
-*.md
-LICENSE
-Dockerfile
-docker-compose.*
-LICENSE
-venv/
