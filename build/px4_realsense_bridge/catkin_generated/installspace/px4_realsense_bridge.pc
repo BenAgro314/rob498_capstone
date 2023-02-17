@@ -1,4 +1,4 @@
-prefix=/home/rob498/catkin_ws/install
+prefix=/home/jetson/catkin_ws/install
 
 Name: px4_realsense_bridge
 Description: Description of px4_realsense_bridge

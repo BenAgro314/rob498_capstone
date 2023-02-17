@@ -2,7 +2,7 @@
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/rob498/catkin_ws/install")
+  set(CMAKE_INSTALL_PREFIX "/home/jetson/catkin_ws/install")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/rob498/catkin_ws/build/px4_realsense_bridge/gtest/googlemock/gtest/cmake_install.cmake")
+  include("/home/jetson/catkin_ws/build/px4_realsense_bridge/gtest/googletest/cmake_install.cmake")
 
 endif()
 
