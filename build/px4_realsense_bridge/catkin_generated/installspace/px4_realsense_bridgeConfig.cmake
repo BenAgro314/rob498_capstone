@@ -67,14 +67,14 @@ set(px4_realsense_bridge_CONFIG_INCLUDED TRUE)
 
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
-  set(px4_realsense_bridge_SOURCE_PREFIX /home/rob498/catkin_ws/src/VIO)
-  set(px4_realsense_bridge_DEVEL_PREFIX /home/rob498/catkin_ws/devel/.private/px4_realsense_bridge)
+  set(px4_realsense_bridge_SOURCE_PREFIX /home/jetson/catkin_ws/src/VIO)
+  set(px4_realsense_bridge_DEVEL_PREFIX /home/jetson/catkin_ws/devel/.private/px4_realsense_bridge)
   set(px4_realsense_bridge_INSTALL_PREFIX "")
   set(px4_realsense_bridge_PREFIX ${px4_realsense_bridge_DEVEL_PREFIX})
 else()
   set(px4_realsense_bridge_SOURCE_PREFIX "")
   set(px4_realsense_bridge_DEVEL_PREFIX "")
-  set(px4_realsense_bridge_INSTALL_PREFIX /home/rob498/catkin_ws/install)
+  set(px4_realsense_bridge_INSTALL_PREFIX /home/jetson/catkin_ws/install)
   set(px4_realsense_bridge_PREFIX ${px4_realsense_bridge_INSTALL_PREFIX})
 endif()
 
@@ -154,7 +154,7 @@ foreach(library ${libraries})
     set(lib_path "")
     set(lib "${library}-NOTFOUND")
     # since the path where the library is found is returned we have to iterate over the paths manually
-    foreach(path /home/rob498/catkin_ws/install/lib;/home/rob498/catkin_ws/devel/lib;/opt/ros/melodic/lib)
+    foreach(path /home/jetson/catkin_ws/install/lib;/home/jetson/catkin_ws/devel/lib;/opt/ros/noetic/lib)
       find_library(lib ${library}
         PATHS ${path}
         NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
@@ -211,7 +211,7 @@ foreach(depend ${depends})
   _unpack_libraries_with_build_configuration(px4_realsense_bridge_LIBRARIES ${px4_realsense_bridge_LIBRARIES})
 
   _list_append_unique(px4_realsense_bridge_LIBRARY_DIRS ${${px4_realsense_bridge_dep}_LIBRARY_DIRS})
-  list(APPEND px4_realsense_bridge_EXPORTED_TARGETS ${${px4_realsense_bridge_dep}_EXPORTED_TARGETS})
+  _list_append_deduplicate(px4_realsense_bridge_EXPORTED_TARGETS ${${px4_realsense_bridge_dep}_EXPORTED_TARGETS})
 endforeach()
 
 set(pkg_cfg_extras "")

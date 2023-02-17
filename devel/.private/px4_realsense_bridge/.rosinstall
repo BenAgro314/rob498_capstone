@@ -1,2 +1,2 @@
 - setup-file:
-    local-name: /home/rob498/catkin_ws/devel/.private/px4_realsense_bridge/setup.sh
+    local-name: /home/jetson/catkin_ws/devel/.private/px4_realsense_bridge/setup.sh
