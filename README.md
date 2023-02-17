@@ -10,6 +10,7 @@
 - [Wifi Debugging](https://forums.developer.nvidia.com/t/jetson-nano-wifi/72269/21)
 	- Maybe this command worked: sudo iw dev wlan0 set power_save off
 - [Challenge Task Page](https://q.utoronto.ca/courses/299314/pages/challenge-tasks-midterm-video-and-final-report?wrap=1)
+- [Amazing docker files for jetson](https://github.com/dusty-nv/jetson-containers)
 
 ## SSH Using Jetson's MicroUSB Port
 - ssh rob498@192.168.55.1
