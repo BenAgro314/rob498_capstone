@@ -8,6 +8,8 @@
 
 # modified environment variables
 export CMAKE_PREFIX_PATH="/home/jetson/catkin_ws/devel/.private/px4_realsense_bridge:$CMAKE_PREFIX_PATH"
+export LD_LIBRARY_PATH="/home/jetson/catkin_ws/devel/.private/px4_realsense_bridge/lib:$LD_LIBRARY_PATH"
+export PKG_CONFIG_PATH="/home/jetson/catkin_ws/devel/.private/px4_realsense_bridge/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PWD='/home/jetson/catkin_ws/build/px4_realsense_bridge'
 export ROSLISP_PACKAGE_DIRECTORIES="/home/jetson/catkin_ws/devel/.private/px4_realsense_bridge/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
 export ROS_PACKAGE_PATH="/home/jetson/catkin_ws/src/VIO:$ROS_PACKAGE_PATH"
