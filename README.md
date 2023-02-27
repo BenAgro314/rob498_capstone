@@ -16,7 +16,7 @@
 ## SSH Using Jetson's MicroUSB Port
 - ssh captors@192.168.55.1
 
-To get the ip address for U of T wifi, connect via Microusb, type "ifconfig" and use the ip address under wlan0 -> inet
+To get the ip address for U of T wifi, ssh via Microusb, type "ifconfig" and use the ip address under wlan0 -> inet
 
 ## SSH and Remote Desktop:
 
