@@ -103,7 +103,7 @@ class RobDroneControl():
             self.setpoint_pub.publish(self.current_waypoint)
             if self.pose_is_close(self.current_waypoint, self.current_pose):
                 if len(self.waypoint_queue) > 0:
-                    self.current_pose = self.waypoint_queue.pop(-1)
+                    self.current_waypoint = self.waypoint_queue.pop(-1)
             rate.sleep()
 
 if __name__ == "__main__":
