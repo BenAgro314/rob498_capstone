@@ -4,6 +4,16 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool, CommandBoolRequest, SetMode, SetModeRequest
+from std_srvs.srv import Empty, EmptyResponse
+
+# Callback handlers
+def handle_launch():
+    print('Launch Requested. Your drone should take off.')
+
+# Service callbacks
+def callback_launch(request):
+    handle_launch()
+    return EmptyResponse()
 
 current_state = State()
 
@@ -22,6 +32,7 @@ if __name__ == "__main__":
     #rospy.wait_for_service("/mavros/cmd/arming")
     #arming_client = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)    
 
+    srv_launch = rospy.Service('comm/launch', Empty, callback_launch)
     #rospy.wait_for_service("/mavros/set_mode")
     #set_mode_client = rospy.ServiceProxy("mavros/set_mode", SetMode)
     
