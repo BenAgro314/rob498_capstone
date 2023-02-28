@@ -6,21 +6,24 @@ from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool, CommandBoolRequest, SetMode, SetModeRequest
 from std_srvs.srv import Empty, EmptyResponse
 
-# Callback handlers
-def handle_launch():
-    print('Launch Requested. Your drone should take off.')
-
-# Service callbacks
-def callback_launch(request):
-    handle_launch()
-    return EmptyResponse()
 
 current_state = State()
+pose = PoseStamped()
 
 def state_cb(msg):
     global current_state
     current_state = msg
 
+# Callback handlers
+def handle_launch():
+    global pose
+    print('Launch Requested. Your drone should take off.')
+    pose.pose.position.z = 1.5
+
+# Service callbacks
+def callback_launch(request):
+    handle_launch()
+    return EmptyResponse()
 
 if __name__ == "__main__":
     rospy.init_node("offb_node_py")
@@ -44,11 +47,10 @@ if __name__ == "__main__":
     while(not rospy.is_shutdown() and not current_state.connected):
         rate.sleep()
 
-    pose = PoseStamped()
 
     pose.pose.position.x = 0
     pose.pose.position.y = 0
-    pose.pose.position.z = 1.5
+    pose.pose.position.z = 0
 
     # Send a few setpoints before starting
     for i in range(100):   
