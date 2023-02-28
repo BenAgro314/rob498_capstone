@@ -2,9 +2,11 @@
 
 import rospy
 from std_srvs.srv import Empty, EmptyResponse
+from offb_node import DroneController
 
 # Callback handlers
 def handle_launch():
+    # controller.setpnit= 
     print('Launch Requested. Your drone should take off.')
 
 def handle_test():
@@ -39,12 +41,12 @@ def comm_node():
     print('Do not change the node name and service topics! The TAs will test these service calls prior to flight')
     print('Your own code should be integrated into this node')
     
+
     rospy.init_node('rob498_drone') 
     srv_launch = rospy.Service('comm/launch', Empty, callback_launch)
     srv_test = rospy.Service('comm/test', Empty, callback_test)
     srv_land = rospy.Service('comm/land', Empty, callback_land)
     srv_abort = rospy.Service('comm/abort', Empty, callback_abort)
-
     # Your code goes below
 
     rospy.spin()
