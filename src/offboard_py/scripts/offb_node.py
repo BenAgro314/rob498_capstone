@@ -4,70 +4,54 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool, CommandBoolRequest, SetMode, SetModeRequest
-
-current_state = State()
-
-def state_cb(msg):
-    global current_state
-    current_state = msg
+from std_srvs.srv import Empty, EmptyResponse
 
 
-if __name__ == "__main__":
-    rospy.init_node("offb_node_py")
+class DroneController():
 
-    state_sub = rospy.Subscriber("mavros/state", State, callback = state_cb)
+    def __init__(self):
+        self.current_state = State()
 
-    local_pos_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
+        rospy.init_node('offb_node_py') 
+
+        self.state_sub = rospy.Subscriber("mavros/state", State, callback = self.state_cb)
+        self.local_pos_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
+        self.srv_launch = rospy.Service('comm/launch', Empty, self.callback_launch)
+        self.rate = rospy.Rate(20)
+        print("Trying to Connect")
+        while(not rospy.is_shutdown() and not self.current_state.connected):
+            self.rate.sleep()
+        print("Connected!")
+        self.pose = PoseStamped()
+        self.pose.pose.position.x = 0.0
+        self.pose.pose.position.y = 0.0
+        self.pose.pose.position.z = 0.0
+        self.run()
     
-    #rospy.wait_for_service("/mavros/cmd/arming")
-    #arming_client = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)    
+    def callback_launch(self, request):
+        self.handle_launch()
+        return EmptyResponse()
 
-    #rospy.wait_for_service("/mavros/set_mode")
-    #set_mode_client = rospy.ServiceProxy("mavros/set_mode", SetMode)
-    
+    def handle_launch(self):
+        print("Launching!")
 
-    # Setpoint publishing MUST be faster than 2Hz
-    rate = rospy.Rate(20)
+    def run(self):
+        # Send a few setpoints before starting
+        for i in range(100):   
+            if(rospy.is_shutdown()):
+                break
+            self.local_pos_pub.publish(self.pose)
+            self.rate.sleep()
 
-    # Wait for Flight Controller connection
-    while(not rospy.is_shutdown() and not current_state.connected):
-        rate.sleep()
 
-    pose = PoseStamped()
+        while(not rospy.is_shutdown()):
+            self.local_pos_pub.publish(self.pose)
+            self.rate.sleep()
 
-    pose.pose.position.x = 0
-    pose.pose.position.y = 0
-    pose.pose.position.z = 1.5
+    def state_cb(self, msg):
+        self.current_state = msg
 
-    # Send a few setpoints before starting
-    for i in range(100):   
-        if(rospy.is_shutdown()):
-            break
+if __name__ == "__main___":
+    pass
 
-        local_pos_pub.publish(pose)
-        rate.sleep()
 
-    #offb_set_mode = SetModeRequest()
-    #offb_set_mode.custom_mode = 'OFFBOARD'
-
-    #arm_cmd = CommandBoolRequest()
-    #arm_cmd.value = True
-
-    last_req = rospy.Time.now()
-
-    while(not rospy.is_shutdown()):
-        # if(current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0)):
-        #     if(set_mode_client.call(offb_set_mode).mode_sent == True):
-        #         rospy.loginfo("OFFBOARD enabled")
-        #     
-        #     last_req = rospy.Time.now()
-        # else:
-        #     if(not current_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(5.0)):
-        #         if(arming_client.call(arm_cmd).success == True):
-        #             rospy.loginfo("Vehicle armed")
-        #     
-        #         last_req = rospy.Time.now()
-
-        local_pos_pub.publish(pose)
-
-        rate.sleep()
