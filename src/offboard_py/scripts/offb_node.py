@@ -20,22 +20,31 @@ def handle_launch():
     print('Launch Requested. Your drone should take off.')
     pose.pose.position.z = 1.5
 
+def handle_land():
+    global pose
+    print('Land Requested. Your drone should land.')
+    pose.pose.position.z = 0.2
+
 # Service callbacks
 def callback_launch(request):
     handle_launch()
+    return EmptyResponse()
+
+def callback_land(request):
+    handle_land()
     return EmptyResponse()
 
 if __name__ == "__main__":
     rospy.init_node("offb_node_py")
 
     state_sub = rospy.Subscriber("mavros/state", State, callback = state_cb)
-
     local_pos_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
     
     #rospy.wait_for_service("/mavros/cmd/arming")
     #arming_client = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)    
 
     srv_launch = rospy.Service('comm/launch', Empty, callback_launch)
+    srv_launch = rospy.Service('comm/land', Empty, callback_land)
     #rospy.wait_for_service("/mavros/set_mode")
     #set_mode_client = rospy.ServiceProxy("mavros/set_mode", SetMode)
     
