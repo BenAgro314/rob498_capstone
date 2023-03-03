@@ -19,10 +19,10 @@ class RobDroneControl():
         # TODO: make these arguments / config files
         self.waypoint_ths = 0.2 # used in pose_is_close
         self.on_ground_ths = 0.2
-        self.launch_height = 1.5 # check this
-        self.num_launch_waypoints = 3
-        self.num_land_waypoints = 3
-        self.land_height = 0.15
+        self.launch_height = 1.6475 # check this
+        self.num_launch_waypoints = 1
+        self.num_land_waypoints = 1
+        self.land_height = 0.10
 
         self.state_sub = rospy.Subscriber("mavros/state", State, callback = self.state_cb)
         self.setpoint_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
@@ -42,6 +42,7 @@ class RobDroneControl():
         self.current_state = msg
 
     def launch_cb(self, request: Empty):
+        print("Launching")
         if not self.active:
             print("Cannot launch, not connected yet")
             return EmptyResponse()
@@ -57,6 +58,7 @@ class RobDroneControl():
         return EmptyResponse()
 
     def land_cb(self, request: Empty):
+        print("Landing")
         if not self.active:
             print("Cannot land, not connected yet")
             return EmptyResponse()
@@ -73,12 +75,13 @@ class RobDroneControl():
         return EmptyResponse()
 
     def abort_cb(self, request: Empty):
+        print("Aborting")
         self.current_waypoint = self.current_pose
-        print("Aborting!")
         self.waypoint_queue = []
         return EmptyResponse()
 
     def test_cb(self, request: Empty):
+        print("Testing")
         return EmptyResponse()
 
     def can_launch(self):
