@@ -3,7 +3,7 @@
 
 Within this directory, simply call make flow to generate the output binary flow_run.
 
-NOTE: On different machines, the location of the opencv installation may be different. Changing the PKG_CONFIG_PATH and possibly LD_FLAGS may be necessary to connect properly to wherever opencv is installed on the jetson.
+NOTE: On different machines, the location of the opencv installation may be different. Changing the PKG_CONFIG_PATH and possibly LD_FLAGS in the Makefile may be necessary to connect properly to wherever opencv is installed on the jetson.
 
 TO-DO:
 - Ensure cv can access our HD Camera on the Jetson
