@@ -1,6 +1,7 @@
 # Math utilities library for captor
 import numpy as np
 from numpy.linalg import matrix_power, inv, norm
+from scipy.spatial.transform import Rotation as R
 
 
 def interpolate_transform(T_start, T_end, n_steps=1, interp_dist=None):
@@ -29,3 +30,44 @@ def interpolate_transform(T_start, T_end, n_steps=1, interp_dist=None):
     return queue
 
 
+def get_position(transform):
+    """_summary_
+
+    Args:
+        transform (4x4 np.array): _description_
+
+    Returns:
+        (3x1 np.array): _description_
+    """
+    return transform[0:3,:3]
+
+def get_rotation(transform, as_vector=True):
+    """get rotation/orientation from transform/pose in se3. toggle
+       return type as vector or as matrix.
+
+    Args:
+        transform (4x4 np.array): 4x4 np.array in SE3 representing transform
+        as_vector (bool, optional): Set return type.Defaults to True.
+ 
+    Returns:
+        _type_: rotation as rotvec (3x1) or as rotation matrix (3x3)
+    """
+    r = R.from_matrix(transform[0:3,0:3])
+    if as_vector:
+        return r.as_rotvec()
+    return r.as_matrix()
+
+def gen_transform(pose_vec):
+    """generate transfomr from pose vector
+
+    Args:
+        pose (6x1 np.array): pose vector [x,y,z,phi,theta,psi]
+
+    Returns:
+        transform: 4x4 nparray representing pose in SE3
+    """
+    transform = np.identity(4)
+    r = R.from_rotvec(pose_vec[3;6])
+    transform[0:3,0:3] = r.as_matrix()
+    transform[0:3,3]   = pose_vec[0:3]
+    return transform
