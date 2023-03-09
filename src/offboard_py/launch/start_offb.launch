@@ -6,4 +6,7 @@
 
 	<!-- Our node to control the drone -->
 	<node pkg="offboard_py" type="rob498_drone.py" name="rob498_drone_py" required="true" output="screen" />
+
+    <!-- rviz -->
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find offboard_py)/rviz/offboard.rviz" />
 </launch>

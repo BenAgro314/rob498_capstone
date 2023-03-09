@@ -18,6 +18,7 @@ def handle_abort():
 
 # Service callbacks
 def callback_launch(request):
+    global pose
     handle_launch()
     return EmptyResponse()
 
