@@ -37,7 +37,7 @@ def get_position(transform):
         transform (4x4 np.array): _description_
 
     Returns:
-        (3x1 np.array): _description_
+        (3x1 np.array): [x,y,z]
     """
     return transform[0:3,:3]
 
@@ -50,7 +50,7 @@ def get_rotation(transform, as_vector=True):
         as_vector (bool, optional): Set return type.Defaults to True.
  
     Returns:
-        _type_: rotation as rotvec (3x1) or as rotation matrix (3x3)
+        _type_: rotation as rotvec [tx,ty,tz] (3x1) or as rotation matrix C (3x3)
     """
     r = R.from_matrix(transform[0:3,0:3])
     if as_vector:
@@ -61,7 +61,7 @@ def gen_transform(pose_vec):
     """generate transfomr from pose vector
 
     Args:
-        pose (6x1 np.array): pose vector [x,y,z,phi,theta,psi]
+        pose (6x1 np.array): pose vector [x,y,z,tz,ty,tz]
 
     Returns:
         transform: 4x4 nparray representing pose in SE3
@@ -71,3 +71,17 @@ def gen_transform(pose_vec):
     transform[0:3,0:3] = r.as_matrix()
     transform[0:3,3]   = pose_vec[0:3]
     return transform
+
+def gen_posevec(transform):
+    """generate 6x1 pose vector.
+
+    Args:
+        transform (4x4nparray): _description_
+
+    Returns:
+        _type_: 6x1 pose vector [x,y,z,tx,ty,tz]
+    """
+    position = get_position(transform)
+    rotvec   = get_rotation(transform)
+    return np.concatenate(position,rotvec)
+    
