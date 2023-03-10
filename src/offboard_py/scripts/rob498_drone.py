@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from typing import List 
 
-from offboard_py.scripts.path_planner import find_traj
+#from offboard_py.scripts.path_planner import find_traj
 from offboard_py.scripts.utils import Colors
 from threading import Semaphore, Lock
 import rospy
@@ -144,13 +144,14 @@ class RobDroneControl():
             start_ind = i
             goal_ind = i + 1
             obstacle_points = points[goal_ind + 1:] if (goal_ind + 1 < len(points)) else np.zeros((0, 3))
-            traj = find_traj(
-                start = points[start_ind],
-                goal = points[goal_ind],
-                obstacle_points=obstacle_points,
-                obstacle_radius=obstacle_radius,
-                limits = self.flight_limits,
-            )
+            traj = points[start_ind:goal_ind+1]
+            #traj = find_traj(
+            #    start = points[start_ind],
+            #    goal = points[goal_ind],
+            #    obstacle_points=obstacle_points,
+            #    obstacle_radius=obstacle_radius,
+            #    limits = self.flight_limits,
+            #)
             if traj is None:
                 print(f"{Colors.RED}FAILED TO FIND PATH, STOPPING{Colors.RESET}")
                 return
