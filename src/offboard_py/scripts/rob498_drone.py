@@ -49,7 +49,7 @@ class RobDroneControl():
         self.current_state = State()
 
         self.waypoint_queue = []
-        self.current_waypoint = PoseStamped()
+        self.current_waypoint = None 
         self.active = False
 
         self.waypoint_queue_num = Semaphore(0)
@@ -204,6 +204,8 @@ class RobDroneControl():
         return np.linalg.norm(pt1 - pt2) < self.waypoint_ths
 
     def compute_twist_command(self):
+        if self.current_waypoint is None:
+            return Twist()
         goal = np.array([
             [self.current_waypoint.pose.position.x],
             [self.current_waypoint.pose.position.y],
@@ -233,7 +235,7 @@ class RobDroneControl():
         while(not rospy.is_shutdown()):
             #self.setpoint_position_pub.publish(self.current_waypoint)
             self.setpoint_vel_pub.publish(self.compute_twist_command())
-            if self.pose_is_close(self.current_waypoint, self.current_pose):
+            if self.current_waypoint is None or self.pose_is_close(self.current_waypoint, self.current_pose):
                 #self.queue_lock.acquire()
                 if self.len_waypoint_queue > 0:
                     self.current_waypoint = self.waypoint_queue_pop()
