@@ -68,7 +68,7 @@ set(offboard_py_CONFIG_INCLUDED TRUE)
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
   set(offboard_py_SOURCE_PREFIX /home/jetson/catkin_ws/src/offboard_py)
-  set(offboard_py_DEVEL_PREFIX /home/jetson/catkin_ws/devel/.private/offboard_py)
+  set(offboard_py_DEVEL_PREFIX /home/jetson/catkin_ws/devel)
   set(offboard_py_INSTALL_PREFIX "")
   set(offboard_py_PREFIX ${offboard_py_DEVEL_PREFIX})
 else()
