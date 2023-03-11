@@ -1,1 +1,8 @@
-/home/jetson/catkin_ws/devel/.private/offboard_py/lib/pkgconfig/offboard_py.pc
+prefix=/home/jetson/catkin_ws/devel
+
+Name: offboard_py
+Description: Description of offboard_py
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
