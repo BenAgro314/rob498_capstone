@@ -14,7 +14,7 @@
 - [another docker thing to look at](https://github.com/timongentzsch/Jetson_Ubuntu20_Images)
 
 ## SSH Using Jetson's MicroUSB Port
-- ssh captors@192.168.55.1
+- ssh jetson@192.168.55.1
 
 To get the ip address for U of T wifi, ssh via Microusb, type "ifconfig" and use the ip address under wlan0 -> inet
 
@@ -24,7 +24,7 @@ Put this into your `~/.ssh/config` (make that file if it doesn't exist):
 ```
 Host jetson
     HostName 100.67.79.56 # change this to the ip of the Jetson on U of T wifi
-    User captors
+    User jetson
     LocalForward 5900 localhost:5900
 ```
 Then you can do `ssh jetson`, put in the password, and you should have an ssh connection.
