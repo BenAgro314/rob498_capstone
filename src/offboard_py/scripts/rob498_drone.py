@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import List 
+from typing import List, Optional 
 
 #from offboard_py.scripts.path_planner import find_traj
 from offboard_py.scripts.utils import Colors
@@ -7,7 +7,7 @@ from threading import Semaphore, Lock
 import rospy
 from copy import deepcopy
 import numpy as np
-from geometry_msgs.msg import PoseStamped, Twist
+from geometry_msgs.msg import PoseStamped, Twist, PoseArray
 from mavros_msgs.msg import State
 from std_srvs.srv import Empty, EmptyResponse
 from nav_msgs.msg import Path
@@ -20,6 +20,10 @@ class RobDroneControl():
         self.srv_test = rospy.Service('comm/test', Empty, self.test_cb)
         self.srv_land = rospy.Service('comm/land', Empty, self.land_cb)
         self.srv_abort = rospy.Service('comm/abort', Empty, self.abort_cb)
+
+        name = 'rob498_drone_01'  # Change 00 to your team ID
+        self.sub_waypoints = rospy.Subscriber(name+'/comm/waypoints', PoseArray, self.waypoint_cb)
+        self.received_waypoints: Optional[PoseArray] = None # PoseArray
 
         # TODO: make these arguments / config files
         self.waypoint_ths = 0.10 # used in pose_is_close
@@ -67,7 +71,7 @@ class RobDroneControl():
         self.waypoint_queue_num.release()
 
     def waypoint_queue_pop(self):
-        self.waypoint_queue_num.acquire()
+        self.waypoint_queue_num.acquire() # semaphor.down
         self.waypoint_queue_lock.acquire()
 
         res = self.waypoint_queue.pop(0)
@@ -134,7 +138,7 @@ class RobDroneControl():
         exit()
         return EmptyResponse()
 
-    def test_task3(self, points: np.array):
+    def test_task3_dummy(self, points: np.array):
         # points.shape == (N, 3)
         obstacle_radius = 0.3
         start = np.array([self.current_pose.pose.position.x, self.current_pose.pose.position.y, self.current_pose.pose.position.z])[None, :]
@@ -175,19 +179,39 @@ class RobDroneControl():
 
     def test_cb(self, request: Empty):
         #self.queue_lock.acquire()
-        print(f"{Colors.RED}TESTING{Colors.RESET}")
+        print(f"{Colors.GREEN}TESTING{Colors.RESET}")
         if not self.active:
             print("Cannot test, not connected yet")
             return EmptyResponse()
         if not self.can_test():
             print(f"Cannot test, not launched or waypoint queue is not empty : {self.len_waypoint_queue}")
             return EmptyResponse()
-        points = np.random.rand(6, 3) * 2 + 1
-        self.test_task3(points)
+        if self.received_waypoints is None:
+            print(f"Cannot test, haven't gotten waypoints ")
+            return EmptyResponse()
+
+        self.test_task_3()
+        return EmptyResponse()
+
+    def test_task_3(self):
+        self.waypoint_queue_lock.acquire()
+        for pose in self.received_waypoints:
+            new_pose = PoseStamped()
+            new_pose.pose.position.x = pose.position.x
+            new_pose.pose.position.y = pose.position.y
+            new_pose.pose.position.z = pose.position.z
+            self.waypoint_queue.append(new_pose)
+            self.waypoint_queue_num.release() # semaphor.up
+            self.len_waypoint_queue += 1
 
         self.publish_current_queue()
-        #self.queue_lock.release()
-        return EmptyResponse()
+        self.waypoint_queue_lock.release()
+
+    def waypoint_cb(self, msg: PoseArray):
+        if self.received_waypoints is not None:
+            return
+        print(f"{Colors.GREEN}RECIEVED WAYPOINTS{Colors.RESET}")
+        self.received_waypoints = msg
 
     def can_launch(self):
         return self.current_pose.pose.position.z < self.on_ground_ths and self.len_waypoint_queue == 0
