@@ -20,6 +20,9 @@ class RobDroneControl():
         self.srv_test = rospy.Service('comm/test', Empty, self.test_cb)
         self.srv_land = rospy.Service('comm/land', Empty, self.land_cb)
         self.srv_abort = rospy.Service('comm/abort', Empty, self.abort_cb)
+        self.srv_home = rospy.Service('comm/home', Empty, self.home_cb)
+
+        self.home_pose: Optional[PoseStamped] = None
 
         name = 'rob498_drone_01'  # Change 00 to your team ID
         self.sub_waypoints = rospy.Subscriber(name+'/comm/waypoints', PoseArray, self.waypoint_cb)
@@ -29,8 +32,6 @@ class RobDroneControl():
         self.waypoint_ths = 0.10 # used in pose_is_close
         self.on_ground_ths = 0.2
         self.launch_height = 1.6475 # check this
-        self.num_launch_waypoints = 1
-        self.num_land_waypoints = 1
         self.land_height = 0.05
         self.max_speed = 0.5
 
@@ -92,6 +93,26 @@ class RobDroneControl():
         msg.poses = [self.current_pose] + self.waypoint_queue
         self.current_path_pub.publish(msg)
 
+    def home_cb(self, request: Empty):
+        if self.home_pose is None:
+            print("Cannot go home, home is not defined")
+            return EmptyResponse()
+        self.waypoint_queue_lock.acquire()
+        # empty waypoint queue
+        while self.len_waypoint_queue > 0:
+            self.waypoint_queue.pop(0)
+            self.waypoint_queue_num.acquire()
+            self.len_waypoint_queue -= 1
+        # add home waypoint
+        self.waypoint_queue.append(self.home_pose)
+        self.waypoint_queue_num.release()
+        self.len_waypoint_queue += 1
+        # clear received waypoints for re-test
+        self.received_waypoints = None
+        self.publish_current_queue()
+        self.waypoint_queue_lock.release()
+        return EmptyResponse()
+
     def launch_cb(self, request: Empty):
         #self.queue_lock.acquire()
 
@@ -103,10 +124,10 @@ class RobDroneControl():
             return EmptyResponse()
 
         print(f"{Colors.GREEN}LAUNCHING{Colors.RESET}")
-        for i in range(self.num_launch_waypoints):
-            pose = deepcopy(self.current_pose)
-            pose.pose.position.z = self.launch_height * (float(i+1) / float(self.num_launch_waypoints))
-            self.waypoint_queue_push(pose)
+        pose = deepcopy(self.current_pose)
+        pose.pose.position.z = self.launch_height
+        self.home_pose = pose
+        self.waypoint_queue_push(pose)
 
         self.publish_current_queue()
 
@@ -179,7 +200,6 @@ class RobDroneControl():
 
     def test_cb(self, request: Empty):
         #self.queue_lock.acquire()
-        print(f"{Colors.GREEN}TESTING{Colors.RESET}")
         if not self.active:
             print("Cannot test, not connected yet")
             return EmptyResponse()
@@ -189,14 +209,16 @@ class RobDroneControl():
         if self.received_waypoints is None:
             print(f"Cannot test, haven't gotten waypoints ")
             return EmptyResponse()
+        print(f"{Colors.GREEN}TESTING{Colors.RESET}")
 
         self.test_task_3()
         return EmptyResponse()
 
     def test_task_3(self):
         self.waypoint_queue_lock.acquire()
-        for pose in self.received_waypoints:
+        for pose in self.received_waypoints.poses:
             new_pose = PoseStamped()
+            new_pose.header = deepcopy(self.current_pose.header)
             new_pose.pose.position.x = pose.position.x
             new_pose.pose.position.y = pose.position.y
             new_pose.pose.position.z = pose.position.z
