@@ -34,3 +34,25 @@ run `vncviewer 0.0.0.0:5900`
 ## Debugging
 
 - fixing permission error in `bridge_mavros`: `sudo chmod 666 /dev/ttyTHS1`
+
+
+## Setting up the Jetson
+
+1. Follow instructions here to flash the Jetson with Ubuntu 20.04: https://github.com/Qengineering/Jetson-Nano-Ubuntu-20-image
+2. Install ROS Noetic: http://wiki.ros.org/noetic/Installation/Ubuntu
+3. `sudo apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential`
+4. `rosdep init`
+5. `rosdep update`
+6. `sudo apt install python3-catkin-tools`
+7. Clone our repo `git clone https://github.com/BenAgro314/rob498_capstone`, and rename it to `~/catkin_ws`
+8. `cd ~/catkin_ws/` and `catkin build` 
+9. `echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc` and `source ~/.bashrc`
+10. `sudo apt install ros-noetic-mavros ros-noetic-mavros-extras`
+11. `cd ~` and `wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh`
+12. `chmod +x install_geographiclib_datasets.sh`
+13. `sudo ./install_geographiclib_datasets.sh`
+14. `sudo apt install libpcl1 ros-noetic-octomap-*`
+15. `sudo apt-get install ros-noetic-realsense2-camera`
+16. Follow the instructions in the top answer here `https://stackoverflow.com/questions/62134563/how-to-give-permission-to-intel-realsense-camera-on-ubuntu`
+17. Follow the instructions here to install the Wifi drivers: `https://github.com/utiasSTARS/ROB498-flight/blob/main/instructions/hardware/jetson_nano.md` 
+
