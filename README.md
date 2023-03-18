@@ -13,6 +13,7 @@
 - [Amazing docker files for jetson](https://github.com/dusty-nv/jetson-containers)
 - [another docker thing to look at](https://github.com/timongentzsch/Jetson_Ubuntu20_Images)
 
+
 ## SSH Using Jetson's MicroUSB Port
 - ssh jetson@192.168.55.1
 
@@ -56,3 +57,11 @@ run `vncviewer 0.0.0.0:5900`
 16. Follow the instructions in the top answer here `https://stackoverflow.com/questions/62134563/how-to-give-permission-to-intel-realsense-camera-on-ubuntu`
 17. Follow the instructions here to install the Wifi drivers: `https://github.com/utiasSTARS/ROB498-flight/blob/main/instructions/hardware/jetson_nano.md` 
 
+
+## Challenge Task 4
+
+
+### Links
+- [Realsense T265 depth](https://github.com/IntelRealSense/librealsense/blob/master/wrappers/python/examples/t265_stereo.py)
+- [Stereo Block Matching For Realsense](https://github.com/tiralonghipol/t265_depth)
+  
