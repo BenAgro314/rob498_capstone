@@ -3,14 +3,17 @@ from typing import List, Optional
 
 #from offboard_py.scripts.path_planner import find_traj
 from offboard_py.scripts.utils import Colors
+from offboard_py.scripts.utils import pose_to_numpy, transform_stamped_to_numpy, pose_stamped_to_numpy, numpy_to_pose_stamped
 from threading import Semaphore, Lock
 import rospy
 from copy import deepcopy
 import numpy as np
-from geometry_msgs.msg import PoseStamped, Twist, PoseArray
+from geometry_msgs.msg import PoseStamped, Twist, PoseArray, TransformStamped
 from mavros_msgs.msg import State
 from std_srvs.srv import Empty, EmptyResponse
 from nav_msgs.msg import Path
+import message_filters
+
 
 class RobDroneControl():
 
@@ -45,11 +48,24 @@ class RobDroneControl():
         #self.setpoint_position_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
         self.setpoint_vel_pub = rospy.Publisher("mavros/setpoint_velocity/cmd_vel_unstamped", Twist, queue_size=10)
         self.local_pose_sub = rospy.Subscriber("mavros/local_position/pose", PoseStamped, callback = self.pose_cb)
+
+
+        #self.vicon_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", self.vicon_callback)
+        self.local_pose_sub_sync = message_filters.Subscriber("mavros/local_position/pose", PoseStamped)
+        self.vicon_pose_sub = message_filters.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped)
+
+        self.time_synchronizer = message_filters.TimeSynchronizer([self.vicon_pose_sub, self.local_pose_sub_sync], queue_size=10)
+        self.time_synchronizer.registerCallback(self.synchronized_vicon_callback)
+
+        # global: vicon frame
+        # map: the frame used by the px4
+        # base: the frame attached to the px4
+        self.t_map_global: Optional[np.array] = None
         
         # for viz / outward coms
         self.current_waypoint_pub = rospy.Publisher("rob498/current_waypoint", PoseStamped, queue_size=10)
         self.current_path_pub = rospy.Publisher("rob498/waypoint_queue", Path, queue_size=10)
-        self.current_pose = None
+        self.current_pose: Optional[PoseStamped] = None
 
         self.current_state = State()
 
@@ -61,6 +77,12 @@ class RobDroneControl():
         self.waypoint_queue_lock = Lock()
         self.len_waypoint_queue = 0
 
+    def synchronized_vicon_callback(self, vicon_pose: TransformStamped, mavros_pose: PoseStamped):
+        t_global_dots = transform_stamped_to_numpy(vicon_pose)
+        t_global_base = deepcopy(t_global_dots)
+        t_global_base[2, 3] += 0.05 # check this offset distance 
+        t_map_base = pose_stamped_to_numpy(mavros_pose)
+        self.t_map_global = t_map_base @ np.linalg.inv(t_global_base)
 
     def waypoint_queue_push(self, pose: PoseStamped):
         self.waypoint_queue_lock.acquire()
@@ -104,6 +126,7 @@ class RobDroneControl():
             self.waypoint_queue_num.acquire()
             self.len_waypoint_queue -= 1
         # add home waypoint
+        self.home_pose.header.stamp = rospy.Time.now()
         self.waypoint_queue.append(self.home_pose)
         self.waypoint_queue_num.release()
         self.len_waypoint_queue += 1
@@ -124,7 +147,9 @@ class RobDroneControl():
             return EmptyResponse()
 
         print(f"{Colors.GREEN}LAUNCHING{Colors.RESET}")
-        pose = deepcopy(self.current_pose)
+        pose = PoseStamped()
+        pose.header.stamp = rospy.Time.now()
+        pose.header.frame_id = self.current_pose.header.frame_id
         pose.pose.position.z = self.launch_height
         self.home_pose = pose
         self.waypoint_queue_push(pose)
@@ -144,11 +169,11 @@ class RobDroneControl():
             return EmptyResponse()
 
         print(f"{Colors.GREEN}LANDING{Colors.RESET}")
-        current_height = self.current_pose.pose.position.z
-        for i in range(self.num_land_waypoints):
-            pose = deepcopy(self.current_pose)
-            pose.pose.position.z = current_height * (1.0 - (float(i+1) / float(self.num_land_waypoints))) + self.land_height
-            self.waypoint_queue_push(pose)
+        pose = PoseStamped()
+        pose.header.stamp = rospy.Time.now()
+        pose.header.frame_id = self.current_pose.header.frame_id
+        pose.pose.position.z = self.land_height
+        self.waypoint_queue_push(pose)
 
         self.publish_current_queue()
         #self.queue_lock.release()
@@ -158,45 +183,6 @@ class RobDroneControl():
         print(f"{Colors.RED}ABORTING{Colors.RESET}")
         exit()
         return EmptyResponse()
-
-    def test_task3_dummy(self, points: np.array):
-        # points.shape == (N, 3)
-        obstacle_radius = 0.3
-        start = np.array([self.current_pose.pose.position.x, self.current_pose.pose.position.y, self.current_pose.pose.position.z])[None, :]
-        points = np.concatenate((start, points), axis = 0)
-        trajs = []
-        for i in range(len(points) - 1):
-            start_ind = i
-            goal_ind = i + 1
-            obstacle_points = points[goal_ind + 1:] if (goal_ind + 1 < len(points)) else np.zeros((0, 3))
-            traj = points[start_ind:goal_ind+1]
-            #traj = find_traj(
-            #    start = points[start_ind],
-            #    goal = points[goal_ind],
-            #    obstacle_points=obstacle_points,
-            #    obstacle_radius=obstacle_radius,
-            #    limits = self.flight_limits,
-            #)
-            if traj is None:
-                print(f"{Colors.RED}FAILED TO FIND PATH, STOPPING{Colors.RESET}")
-                return
-            trajs.append(traj[1:])
-
-        trajs = np.concatenate(trajs, axis = 0)
-        self.waypoint_queue_lock.acquire()
-        for p in trajs:
-            m = PoseStamped()
-            m.header.frame_id = self.current_pose.header.frame_id
-            m.pose.position.x = p[0]
-            m.pose.position.y = p[1]
-            m.pose.position.z = p[2]
-            self.waypoint_queue.append(m)
-            #self.waypoint_queue_push(m)
-            self.waypoint_queue_num.release()
-            self.len_waypoint_queue += 1
-
-        self.publish_current_queue()
-        self.waypoint_queue_lock.release()
 
     def test_cb(self, request: Empty):
         #self.queue_lock.acquire()
@@ -215,13 +201,19 @@ class RobDroneControl():
         return EmptyResponse()
 
     def test_task_3(self):
+        if self.t_map_global is None:
+            print("Haven't recieved vicon information yet, can't do task 3")
+            return 
+
         self.waypoint_queue_lock.acquire()
         for pose in self.received_waypoints.poses:
-            new_pose = PoseStamped()
-            new_pose.header = deepcopy(self.current_pose.header)
-            new_pose.pose.position.x = pose.position.x
-            new_pose.pose.position.y = pose.position.y
-            new_pose.pose.position.z = pose.position.z
+
+            # 1. convert the pose into a numpy array to transform it
+            t_global_basei = pose_to_numpy(pose)
+            # 2. transform it into the map frame
+            t_map_basei = self.t_map_global @ t_global_basei
+            # 3. turn back into a tran
+            new_pose = numpy_to_pose_stamped(t_map_basei, self.current_pose.header.frame_id)
             self.waypoint_queue.append(new_pose)
             self.waypoint_queue_num.release() # semaphor.up
             self.len_waypoint_queue += 1
@@ -231,6 +223,10 @@ class RobDroneControl():
 
     def waypoint_cb(self, msg: PoseArray):
         if self.received_waypoints is not None:
+            print("Received waypoints is not None (already got them)")
+            return
+        if self.t_map_global is None:
+            print("Haven't recieved global vicon position estimate yet")
             return
         print(f"{Colors.GREEN}RECIEVED WAYPOINTS{Colors.RESET}")
         self.received_waypoints = msg

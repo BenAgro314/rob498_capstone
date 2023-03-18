@@ -19,6 +19,8 @@ class ValidityChecker(ob.StateValidityChecker):
         self.obstacle_radius = obstacle_radius
 
     def isValid(self, state):
+        if self.obstacle_points.shape[0] == 0:
+            return True
         x, y, z = state[0], state[1], state[2]
         pt = np.array([x, y, z])
         dist = np.linalg.norm(pt - self.obstacle_points, axis = -1)
