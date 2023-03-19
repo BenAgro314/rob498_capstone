@@ -1,0 +1,4 @@
+Symlinking /home/jetson/catkin_ws/devel/lib/pkgconfig/optical_flow.pc
+Symlinking /home/jetson/catkin_ws/devel/lib/optical_flow/optical_flow_node
+Symlinking /home/jetson/catkin_ws/devel/share/optical_flow/cmake/optical_flowConfig-version.cmake
+Symlinking /home/jetson/catkin_ws/devel/share/optical_flow/cmake/optical_flowConfig.cmake

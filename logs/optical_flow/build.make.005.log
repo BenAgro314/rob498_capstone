@@ -1,0 +1,54 @@
+[35m[1mScanning dependencies of target optical_flow_node[0m
+[ 14%] [32mBuilding CXX object CMakeFiles/optical_flow_node.dir/src/main.cpp.o[0m
+[01m[K/home/jetson/catkin_ws/src/optical_flow/src/main.cpp:[m[K In function ‘[01m[Kvoid imuCallback(const ConstPtr&)[m[K’:
+[01m[K/home/jetson/catkin_ws/src/optical_flow/src/main.cpp:17:31:[m[K [01;31m[Kerror: [m[Kcannot convert ‘[01m[Kconst _x_type[m[K’ {aka ‘[01m[Kconst double[m[K’} to ‘[01m[Kconst char*[m[K’
+  printf([01;31m[Kmsg->angular_velocity.x[m[K);
+         [01;31m[K~~~~~~~~~~~~~~~~~~~~~~^[m[K
+In file included from [01m[K/usr/include/c++/8/cstdio:42[m[K,
+                 from [01m[K/usr/include/c++/8/ext/string_conversions.h:43[m[K,
+                 from [01m[K/usr/include/c++/8/bits/basic_string.h:6400[m[K,
+                 from [01m[K/usr/include/c++/8/string:52[m[K,
+                 from [01m[K/usr/include/c++/8/stdexcept:39[m[K,
+                 from [01m[K/usr/include/c++/8/array:39[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/core/cvdef.h:781[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/core.hpp:52[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/opencv.hpp:52[m[K,
+                 from [01m[K/home/jetson/catkin_ws/src/optical_flow/src/main.cpp:1[m[K:
+[01m[K/usr/include/stdio.h:332:43:[m[K [01;36m[Knote: [m[K  initializing argument 1 of ‘[01m[Kint printf(const char*, ...)[m[K’
+ extern int printf ([01;36m[Kconst char *__restrict __format[m[K, ...);
+                    [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~[m[K
+[01m[K/home/jetson/catkin_ws/src/optical_flow/src/main.cpp:19:31:[m[K [01;31m[Kerror: [m[Kcannot convert ‘[01m[Kconst _y_type[m[K’ {aka ‘[01m[Kconst double[m[K’} to ‘[01m[Kconst char*[m[K’
+  printf([01;31m[Kmsg->angular_velocity.y[m[K);
+         [01;31m[K~~~~~~~~~~~~~~~~~~~~~~^[m[K
+In file included from [01m[K/usr/include/c++/8/cstdio:42[m[K,
+                 from [01m[K/usr/include/c++/8/ext/string_conversions.h:43[m[K,
+                 from [01m[K/usr/include/c++/8/bits/basic_string.h:6400[m[K,
+                 from [01m[K/usr/include/c++/8/string:52[m[K,
+                 from [01m[K/usr/include/c++/8/stdexcept:39[m[K,
+                 from [01m[K/usr/include/c++/8/array:39[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/core/cvdef.h:781[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/core.hpp:52[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/opencv.hpp:52[m[K,
+                 from [01m[K/home/jetson/catkin_ws/src/optical_flow/src/main.cpp:1[m[K:
+[01m[K/usr/include/stdio.h:332:43:[m[K [01;36m[Knote: [m[K  initializing argument 1 of ‘[01m[Kint printf(const char*, ...)[m[K’
+ extern int printf ([01;36m[Kconst char *__restrict __format[m[K, ...);
+                    [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~[m[K
+[01m[K/home/jetson/catkin_ws/src/optical_flow/src/main.cpp:21:31:[m[K [01;31m[Kerror: [m[Kcannot convert ‘[01m[Kconst _z_type[m[K’ {aka ‘[01m[Kconst double[m[K’} to ‘[01m[Kconst char*[m[K’
+  printf([01;31m[Kmsg->angular_velocity.z[m[K);
+         [01;31m[K~~~~~~~~~~~~~~~~~~~~~~^[m[K
+In file included from [01m[K/usr/include/c++/8/cstdio:42[m[K,
+                 from [01m[K/usr/include/c++/8/ext/string_conversions.h:43[m[K,
+                 from [01m[K/usr/include/c++/8/bits/basic_string.h:6400[m[K,
+                 from [01m[K/usr/include/c++/8/string:52[m[K,
+                 from [01m[K/usr/include/c++/8/stdexcept:39[m[K,
+                 from [01m[K/usr/include/c++/8/array:39[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/core/cvdef.h:781[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/core.hpp:52[m[K,
+                 from [01m[K/usr/include/opencv4/opencv2/opencv.hpp:52[m[K,
+                 from [01m[K/home/jetson/catkin_ws/src/optical_flow/src/main.cpp:1[m[K:
+[01m[K/usr/include/stdio.h:332:43:[m[K [01;36m[Knote: [m[K  initializing argument 1 of ‘[01m[Kint printf(const char*, ...)[m[K’
+ extern int printf ([01;36m[Kconst char *__restrict __format[m[K, ...);
+                    [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~[m[K
+make[2]: *** [CMakeFiles/optical_flow_node.dir/build.make:63: CMakeFiles/optical_flow_node.dir/src/main.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:180: CMakeFiles/optical_flow_node.dir/all] Error 2
+make: *** [Makefile:141: all] Error 2

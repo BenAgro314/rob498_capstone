@@ -1,0 +1,4 @@
+[35m[1mScanning dependencies of target optical_flow_node[0m
+[ 14%] [32mBuilding CXX object CMakeFiles/optical_flow_node.dir/src/main.cpp.o[0m
+[ 28%] [32m[1mLinking CXX executable /home/jetson/catkin_ws/devel/.private/optical_flow/lib/optical_flow/optical_flow_node[0m
+[100%] Built target optical_flow_node
