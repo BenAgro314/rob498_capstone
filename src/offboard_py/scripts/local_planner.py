@@ -122,7 +122,7 @@ class LocalPlanner:
         curr_cfg = get_config_from_pose_stamped(curr_pose)
         goal_cfg = get_config_from_pose_stamped(goal_pose)
 
-        goal_vec = goal_cfg[:2] - curr_cfg[:2]
+        goal_vec = goal_cfg - curr_cfg
         # if we are within a ths, use non holonomic control (likely safe)
         if np.linalg.norm(goal_vec) < self.trans_ths or self.mode == LocalPlannerType.NON_HOLONOMIC:
             twist = Twist()
