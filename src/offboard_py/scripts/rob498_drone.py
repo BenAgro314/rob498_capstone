@@ -20,7 +20,6 @@ class RobDroneControl():
 
     def __init__(self):
 
-        
         name = 'rob498_drone_01'  # Change 00 to your team ID
         self.srv_launch = rospy.Service(name + '/comm/launch', Empty, self.launch_cb)
         self.srv_test = rospy.Service(name + '/comm/test', Empty, self.test_cb)
