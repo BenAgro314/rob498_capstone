@@ -23,7 +23,7 @@ class ViconBridge():
         #    [0, 0, 0, 1],
         #])
         #matrix = T @ matrix
-        pose = numpy_to_pose_stamped(matrix, frame_id = "local_origin")
+        pose = numpy_to_pose_stamped(matrix, frame_id = "map")
         self.mavros_vision_pose_pub.publish(pose)
 
 if __name__ == "__main__":
