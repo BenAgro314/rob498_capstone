@@ -35,7 +35,7 @@ class RobDroneControl():
         self.received_waypoints: Optional[PoseArray] = None # PoseArray
 
         # TODO: make these arguments / config files
-        self.waypoint_trans_ths = 0.5 # used in pose_is_close
+        self.waypoint_trans_ths = 0.05 # used in pose_is_close
         self.on_ground_ths = 0.2
         self.launch_height = 1.6475 # check this
         self.land_height = 0.05
@@ -48,7 +48,7 @@ class RobDroneControl():
             [0.0, 3.0], # z
         ]
 
-        self.local_planner = LocalPlanner(mode=LocalPlannerType.NON_HOLONOMIC)
+        self.local_planner = LocalPlanner(mode=LocalPlannerType.NON_HOLONOMIC, v_max=0.5)
 
         self.state_sub = rospy.Subscriber("mavros/state", State, callback = self.state_cb)
         #self.setpoint_position_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
