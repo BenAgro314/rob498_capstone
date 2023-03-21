@@ -56,10 +56,9 @@ class RobDroneControl():
         self.local_pose_sub = rospy.Subscriber("mavros/local_position/pose", PoseStamped, callback = self.pose_cb)
 
 
-        #self.vicon_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", self.vicon_callback)
+        self.vicon_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", self.vicon_callback)
         #self.local_pose_sub_sync = message_filters.Subscriber("mavros/local_position/pose", PoseStamped)
         #self.vicon_pose_sub = message_filters.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped)
-        self.vicon_pose_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback=self.vicon_callback)
 
         #self.time_synchronizer = message_filters.TimeSynchronizer([self.vicon_pose_sub, self.local_pose_sub_sync], queue_size=10)
         #self.time_synchronizer.registerCallback(self.synchronized_vicon_callback)
@@ -85,11 +84,19 @@ class RobDroneControl():
         self.len_waypoint_queue = 0
 
     def vicon_callback(self, vicon_pose: TransformStamped):
+        # TODO: timestamp interp for async message
         if self.current_pose is None:
             return
         t_global_dots = transform_stamped_to_numpy(vicon_pose)
-        t_global_base = deepcopy(t_global_dots)
-        t_global_base[2, 3] += 0.05 # check this offset distance 
+        t_dots_base = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0.05],
+                [0, 0, 0, 1],
+            ]
+        )
+        t_global_base = t_global_dots @ t_dots_base
         t_map_base = pose_stamped_to_numpy(self.current_pose)
         self.t_map_global = t_map_base @ np.linalg.inv(t_global_base)
 
@@ -208,9 +215,11 @@ class RobDroneControl():
         if not self.can_test():
             print(f"Cannot test, not launched or waypoint queue is not empty : {self.len_waypoint_queue}")
             return EmptyResponse()
-        if self.received_waypoints is None:
-            print(f"Cannot test, haven't gotten waypoints ")
-            return EmptyResponse()
+
+        rate = rospy.Rate(20)
+        while self.received_waypoints is None:
+            print(f"Cannot test, waiting for waypoints")
+            rate.sleep()
         print(f"{Colors.GREEN}TESTING{Colors.RESET}")
 
         self.test_task_3()
@@ -237,12 +246,12 @@ class RobDroneControl():
         self.waypoint_queue_lock.release()
 
     def waypoint_cb(self, msg: PoseArray):
-        if self.received_waypoints is not None:
-            print("Received waypoints is not None (already got them)")
-            return
-        if self.t_map_global is None:
-            print("Haven't recieved global vicon position estimate yet")
-            return
+        #if self.received_waypoints is not None:
+        #    print("Received waypoints is not None (already got them)")
+        #    return
+        #if self.t_map_global is None:
+        #    print("Haven't recieved global vicon position estimate yet")
+        #    return
         print(f"{Colors.GREEN}RECIEVED WAYPOINTS{Colors.RESET}")
         self.received_waypoints = msg
 
