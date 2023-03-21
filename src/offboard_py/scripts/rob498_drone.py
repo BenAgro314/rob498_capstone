@@ -22,11 +22,11 @@ class RobDroneControl():
 
         
         name = 'rob498_drone_01'  # Change 00 to your team ID
-        self.srv_launch = rospy.Service(name + 'comm/launch', Empty, self.launch_cb)
-        self.srv_test = rospy.Service(name + 'comm/test', Empty, self.test_cb)
-        self.srv_land = rospy.Service(name + 'comm/land', Empty, self.land_cb)
-        self.srv_abort = rospy.Service(name + 'comm/abort', Empty, self.abort_cb)
-        self.srv_home = rospy.Service(name + 'comm/home', Empty, self.home_cb)
+        self.srv_launch = rospy.Service(name + '/comm/launch', Empty, self.launch_cb)
+        self.srv_test = rospy.Service(name + '/comm/test', Empty, self.test_cb)
+        self.srv_land = rospy.Service(name + '/comm/land', Empty, self.land_cb)
+        self.srv_abort = rospy.Service(name + '/comm/abort', Empty, self.abort_cb)
+        self.srv_home = rospy.Service(name + '/comm/home', Empty, self.home_cb)
 
         #self.broadcaster = tf2_ros.TransformBroadcaster()
 
@@ -57,7 +57,8 @@ class RobDroneControl():
         self.local_pose_sub = rospy.Subscriber("mavros/local_position/pose", PoseStamped, callback = self.pose_cb)
 
 
-        self.vicon_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", self.vicon_callback)
+        self.vicon_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, self.vicon_callback)
+        self.test_ready: bool = False
         #self.local_pose_sub_sync = message_filters.Subscriber("mavros/local_position/pose", PoseStamped)
         #self.vicon_pose_sub = message_filters.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped)
 
@@ -216,14 +217,15 @@ class RobDroneControl():
         if not self.can_test():
             print(f"Cannot test, not launched or waypoint queue is not empty : {self.len_waypoint_queue}")
             return EmptyResponse()
+        self.test_ready=True
 
-        rate = rospy.Rate(20)
-        while self.received_waypoints is None:
-            print(f"Cannot test, waiting for waypoints")
-            rate.sleep()
-        print(f"{Colors.GREEN}TESTING{Colors.RESET}")
+        #rate = rospy.Rate(20)
+        #while self.received_waypoints is None:
+            #print(f"Cannot test, waiting for waypoints")
+            #rate.sleep()
+        #print(f"{Colors.GREEN}TESTING{Colors.RESET}")
 
-        self.test_task_3()
+        #self.test_task_3()
         return EmptyResponse()
 
     def test_task_3(self):
@@ -253,8 +255,14 @@ class RobDroneControl():
         #if self.t_map_global is None:
         #    print("Haven't recieved global vicon position estimate yet")
         #    return
+        if not self.test_ready:
+            print("Didn't call test yet")
+            return
+        if self.received_waypoints is not None:
+            return
         print(f"{Colors.GREEN}RECIEVED WAYPOINTS{Colors.RESET}")
         self.received_waypoints = msg
+        self.test_task_3()
 
     def can_launch(self):
         return self.current_pose.pose.position.z < self.on_ground_ths and self.len_waypoint_queue == 0
@@ -274,8 +282,6 @@ class RobDroneControl():
         if self.current_waypoint is None:
             return Twist()
         res = self.local_planner.get_twist(self.current_pose, self.current_waypoint)
-        goal_cfg = get_config_from_pose_stamped(self.current_waypoint)
-        curr_cfg = get_config_from_pose_stamped(self.current_pose)
         #vel = np.clip(goal_cfg[:3] - curr_cfg[:3], a_min = -self.max_speed, a_max = self.max_speed)
         #res = Twist()
         #res.linear.x = vel[0]
