@@ -20,17 +20,17 @@ class RobDroneControl():
 
     def __init__(self):
 
-        self.srv_launch = rospy.Service('comm/launch', Empty, self.launch_cb)
-        self.srv_test = rospy.Service('comm/test', Empty, self.test_cb)
-        self.srv_land = rospy.Service('comm/land', Empty, self.land_cb)
-        self.srv_abort = rospy.Service('comm/abort', Empty, self.abort_cb)
-        self.srv_home = rospy.Service('comm/home', Empty, self.home_cb)
+        name = 'rob498_drone_01'  # Change 00 to your team ID
+        self.srv_launch = rospy.Service(name + '/comm/launch', Empty, self.launch_cb)
+        self.srv_test = rospy.Service(name + '/comm/test', Empty, self.test_cb)
+        self.srv_land = rospy.Service(name + '/comm/land', Empty, self.land_cb)
+        self.srv_abort = rospy.Service(name + '/comm/abort', Empty, self.abort_cb)
+        self.srv_home = rospy.Service(name + '/comm/home', Empty, self.home_cb)
 
         #self.broadcaster = tf2_ros.TransformBroadcaster()
 
         self.home_pose: Optional[PoseStamped] = None
 
-        name = 'rob498_drone_01'  # Change 00 to your team ID
         self.sub_waypoints = rospy.Subscriber(name+'/comm/waypoints', PoseArray, self.waypoint_cb)
         self.received_waypoints: Optional[PoseArray] = None # PoseArray
 
@@ -57,11 +57,12 @@ class RobDroneControl():
 
 
         #self.vicon_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", self.vicon_callback)
-        self.local_pose_sub_sync = message_filters.Subscriber("mavros/local_position/pose", PoseStamped)
-        self.vicon_pose_sub = message_filters.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped)
+        #self.local_pose_sub_sync = message_filters.Subscriber("mavros/local_position/pose", PoseStamped)
+        #self.vicon_pose_sub = message_filters.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped)
+        self.vicon_pose_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback=self.vicon_callback)
 
-        self.time_synchronizer = message_filters.TimeSynchronizer([self.vicon_pose_sub, self.local_pose_sub_sync], queue_size=10)
-        self.time_synchronizer.registerCallback(self.synchronized_vicon_callback)
+        #self.time_synchronizer = message_filters.TimeSynchronizer([self.vicon_pose_sub, self.local_pose_sub_sync], queue_size=10)
+        #self.time_synchronizer.registerCallback(self.synchronized_vicon_callback)
 
         # global: vicon frame
         # map: the frame used by the px4
@@ -83,12 +84,21 @@ class RobDroneControl():
         self.waypoint_queue_lock = Lock()
         self.len_waypoint_queue = 0
 
-    def synchronized_vicon_callback(self, vicon_pose: TransformStamped, mavros_pose: PoseStamped):
+    def vicon_callback(self, vicon_pose: TransformStamped):
+        if self.current_pose is None:
+            return
         t_global_dots = transform_stamped_to_numpy(vicon_pose)
         t_global_base = deepcopy(t_global_dots)
         t_global_base[2, 3] += 0.05 # check this offset distance 
-        t_map_base = pose_stamped_to_numpy(mavros_pose)
+        t_map_base = pose_stamped_to_numpy(self.current_pose)
         self.t_map_global = t_map_base @ np.linalg.inv(t_global_base)
+
+    #def synchronized_vicon_callback(self, vicon_pose: TransformStamped, mavros_pose: PoseStamped):
+    #    t_global_dots = transform_stamped_to_numpy(vicon_pose)
+    #    t_global_base = deepcopy(t_global_dots)
+    #    t_global_base[2, 3] += 0.05 # check this offset distance 
+    #    t_map_base = pose_stamped_to_numpy(mavros_pose)
+    #    self.t_map_global = t_map_base @ np.linalg.inv(t_global_base)
 
     def waypoint_queue_push(self, pose: PoseStamped):
         self.waypoint_queue_lock.acquire()
