@@ -122,11 +122,12 @@ class LocalPlanner:
         curr_cfg = get_config_from_pose_stamped(curr_pose)
         goal_cfg = get_config_from_pose_stamped(goal_pose)
 
-        goal_vec = goal_cfg - curr_cfg
+        goal_vec = goal_cfg[:3] - curr_cfg[:3] # (x, y, z)
         # if we are within a ths, use non holonomic control (likely safe)
         if np.linalg.norm(goal_vec) < self.trans_ths or self.mode == LocalPlannerType.NON_HOLONOMIC:
             twist = Twist()
-            goal_vec = np.clip(goal_vec, -self.v_max, self.v_max)
+            if np.linalg.norm(goal_vec) > self.v_max:
+                goal_vec = self.v_max * goal_vec / np.linalg.norm(goal_vec)
             twist.linear.x = goal_vec[0]
             twist.linear.y = goal_vec[1]
             twist.linear.z = goal_vec[2]
@@ -140,7 +141,7 @@ class LocalPlanner:
             twist.linear.y = v_x_y * np.sin(curr_cfg[-1])
 
             # get z cmd
-            v_z = np.clip(goal_cfg[2] - curr_cfg[2], a_min = -0.5, a_max = 0.5)
+            v_z = np.clip(goal_cfg[2] - curr_cfg[2], a_min=-self.v_max, a_max=self.v_max)
             twist.linear.z = v_z
 
             return twist
