@@ -3,7 +3,7 @@ from typing import List, Optional
 from offboard_py.scripts.local_planner import LocalPlanner, LocalPlannerType 
 
 #from offboard_py.scripts.path_planner import find_traj
-from offboard_py.scripts.utils import Colors, are_angles_close, get_config_from_pose_stamped, pose_stamped_to_transform_stamped, shortest_signed_angle
+from offboard_py.scripts.utils import Colors, are_angles_close, get_config_from_pose_stamped, make_sphere_marker, pose_stamped_to_transform_stamped, shortest_signed_angle, slerp_pose, transform_stamped_to_pose_stamped, transform_twist
 from offboard_py.scripts.utils import pose_to_numpy, transform_stamped_to_numpy, pose_stamped_to_numpy, numpy_to_pose_stamped
 from threading import Semaphore, Lock
 import rospy
@@ -15,11 +15,13 @@ from std_srvs.srv import Empty, EmptyResponse
 from nav_msgs.msg import Path
 import message_filters
 import tf2_ros
+from visualization_msgs.msg import Marker
 
 class RobDroneControl():
 
     def __init__(self):
 
+        
         name = 'rob498_drone_01'  # Change 00 to your team ID
         self.srv_launch = rospy.Service(name + '/comm/launch', Empty, self.launch_cb)
         self.srv_test = rospy.Service(name + '/comm/test', Empty, self.test_cb)
@@ -40,7 +42,8 @@ class RobDroneControl():
         self.launch_height = 1.6475 # check this
         self.land_height = 0.05
         self.max_speed = 0.5 # m/s
-        self.max_rot_speed = 1 # rad/s
+        #self.max_rot_speed = 0.75 # rad/s
+        self.task_ball_radius = 0.15
 
         self.flight_limits = [
             [-3.0, 3.0], # x
@@ -48,7 +51,7 @@ class RobDroneControl():
             [0.0, 3.0], # z
         ]
 
-        self.local_planner = LocalPlanner(mode=LocalPlannerType.NON_HOLONOMIC, v_max=0.5)
+        self.local_planner = LocalPlanner(mode=LocalPlannerType.NON_HOLONOMIC, v_max=self.max_speed)
 
         self.state_sub = rospy.Subscriber("mavros/state", State, callback = self.state_cb)
         #self.setpoint_position_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
@@ -57,7 +60,7 @@ class RobDroneControl():
 
 
         self.vicon_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, self.vicon_callback)
-        self.test_ready: bool = False
+        self.test_ready = False
         #self.local_pose_sub_sync = message_filters.Subscriber("mavros/local_position/pose", PoseStamped)
         #self.vicon_pose_sub = message_filters.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped)
 
@@ -70,9 +73,11 @@ class RobDroneControl():
         self.t_map_global: Optional[np.array] = None
         
         # for viz / outward coms
-        self.current_waypoint_pub = rospy.Publisher("rob498/current_waypoint", PoseStamped, queue_size=10)
+        #self.current_waypoint_pub = rospy.Publisher("rob498/current_waypoint", PoseStamped, queue_size=10)
         self.current_path_pub = rospy.Publisher("rob498/waypoint_queue", Path, queue_size=10)
-        self.current_pose: Optional[PoseStamped] = None
+        self.current_t_map_dots: Optional[PoseStamped] = None
+        self.prev_vicon_pose: Optional[PoseStamped] = None
+        self.prev_t_map_dots: Optional[PoseStamped] = None
 
         self.current_state = State()
 
@@ -82,14 +87,11 @@ class RobDroneControl():
 
         self.waypoint_queue_num = Semaphore(0)
         self.waypoint_queue_lock = Lock()
+        self.current_pose_lock = Lock()
         self.len_waypoint_queue = 0
 
-    def vicon_callback(self, vicon_pose: TransformStamped):
-        # TODO: timestamp interp for async message
-        if self.current_pose is None:
-            return
-        t_global_dots = transform_stamped_to_numpy(vicon_pose)
-        t_dots_base = np.array(
+        self.marker_pub = rospy.Publisher('sphere_marker', Marker, queue_size=10)
+        self.t_dots_base = np.array(
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
@@ -97,9 +99,51 @@ class RobDroneControl():
                 [0, 0, 0, 1],
             ]
         )
-        t_global_base = t_global_dots @ t_dots_base
-        t_map_base = pose_stamped_to_numpy(self.current_pose)
-        self.t_map_global = t_map_base @ np.linalg.inv(t_global_base)
+        self.t_base_dots = np.linalg.inv(self.t_dots_base)
+
+    def publish_sphere_marker(self, x: float, y: float, z:float, r: float):
+        marker = make_sphere_marker(x, y, z, r)
+        self.marker_pub.publish(marker)
+
+    def vicon_callback(self, vicon_pose: TransformStamped):
+        if self.current_t_map_dots is None or self.prev_t_map_dots is None:
+            return
+        vicon_pose=transform_stamped_to_pose_stamped(vicon_pose)
+        if self.prev_vicon_pose is None:
+            self.prev_vicon_pose = vicon_pose
+            return
+        interp_t_global_dots = False
+        # do as little as possible in the lock
+        with self.current_pose_lock:
+            if vicon_pose.header.stamp > self.current_t_map_dots.header.stamp:
+                interp_time = self.current_t_map_dots.header.stamp
+                pose1 = self.prev_vicon_pose
+                pose2 = vicon_pose
+                interp_t_global_dots = True
+            else:
+                interp_time = vicon_pose.header.stamp
+                pose1 = self.prev_t_map_dots
+                pose2 = self.current_t_map_dots
+                interp_t_global_dots = False
+        # slerp
+        interp_pose = pose_stamped_to_numpy(
+                slerp_pose(
+                pose1.pose,
+                pose2.pose,
+                pose1.header.stamp,
+                pose2.header.stamp,
+                interp_time,
+                frame_id=""
+            )
+        )
+        if interp_t_global_dots:
+            t_global_dots = interp_pose
+            t_map_dots = pose_stamped_to_numpy(self.current_t_map_dots)
+        else:
+            t_global_dots = pose_stamped_to_numpy(vicon_pose)
+            t_map_dots = interp_pose
+        self.t_map_global = t_map_dots @ np.linalg.inv(t_global_dots)
+        self.prev_vicon_pose = vicon_pose
 
     #def synchronized_vicon_callback(self, vicon_pose: TransformStamped, mavros_pose: PoseStamped):
     #    t_global_dots = transform_stamped_to_numpy(vicon_pose)
@@ -127,18 +171,20 @@ class RobDroneControl():
         self.waypoint_queue_lock.release()
         return res
 
-    def pose_cb(self, pose: PoseStamped):
-        self.current_pose = pose
-        #transform = pose_stamped_to_transform_stamped(pose, parent_frame_id='map', child_frame_id='base_link')
-        #self.broadcaster.sendTransform(transform)
+    def pose_cb(self, t_map_base: PoseStamped):
+        t_map_base = pose_stamped_to_numpy(t_map_base)
+        t_map_dots = numpy_to_pose_stamped(t_map_base @ self.t_base_dots, frame_id='map')
+        with self.current_pose_lock:
+            self.prev_t_map_dots = self.current_t_map_dots
+            self.current_t_map_dots = t_map_dots
 
     def state_cb(self, msg: State):
         self.current_state = msg
 
     def publish_current_queue(self):
         msg = Path()
-        msg.header.frame_id = self.current_pose.header.frame_id
-        msg.poses = [self.current_pose] + self.waypoint_queue
+        msg.header.frame_id = self.current_t_map_dots.header.frame_id
+        msg.poses = [self.current_t_map_dots] + self.waypoint_queue
         self.current_path_pub.publish(msg)
 
     def home_cb(self, request: Empty):
@@ -173,7 +219,7 @@ class RobDroneControl():
             return EmptyResponse()
 
         print(f"{Colors.GREEN}LAUNCHING{Colors.RESET}")
-        pose = deepcopy(self.current_pose)
+        pose = deepcopy(self.current_t_map_dots)
         pose.header.stamp = rospy.Time.now()
         pose.pose.position.z = self.launch_height
         self.home_pose = pose
@@ -194,7 +240,7 @@ class RobDroneControl():
             return EmptyResponse()
 
         print(f"{Colors.GREEN}LANDING{Colors.RESET}")
-        pose = deepcopy(self.current_pose)
+        pose = deepcopy(self.current_t_map_dots)
         pose.header.stamp = rospy.Time.now()
         pose.pose.position.z = self.land_height
         self.waypoint_queue_push(pose)
@@ -218,13 +264,6 @@ class RobDroneControl():
             return EmptyResponse()
         self.test_ready=True
 
-        #rate = rospy.Rate(20)
-        #while self.received_waypoints is None:
-            #print(f"Cannot test, waiting for waypoints")
-            #rate.sleep()
-        #print(f"{Colors.GREEN}TESTING{Colors.RESET}")
-
-        #self.test_task_3()
         return EmptyResponse()
 
     def test_task_3(self):
@@ -235,12 +274,22 @@ class RobDroneControl():
         self.waypoint_queue_lock.acquire()
         for i, pose in enumerate(self.received_waypoints.poses):
             # 1. convert the pose into a numpy array to transform it
-            t_global_basei = pose_to_numpy(pose)
+            t_global_dotsi = pose_to_numpy(pose)
             # 2. transform it into the map frame
-            t_map_basei = self.t_map_global @ t_global_basei
+            t_map_dotsi = self.t_map_global @ t_global_dotsi
             # 3. turn back into a tran
-            new_pose = numpy_to_pose_stamped(t_map_basei, self.current_pose.header.frame_id)
-            self.waypoint_queue.append(new_pose)
+            new_pose = numpy_to_pose_stamped(t_map_dotsi, self.current_t_map_dots.header.frame_id)
+
+            new_pose_bottom = deepcopy(new_pose)
+            new_pose_bottom.pose.position.z -= self.task_ball_radius / 2
+            self.waypoint_queue.append(new_pose_bottom)
+            self.waypoint_queue_num.release() # semaphor.up
+            self.len_waypoint_queue += 1
+
+            new_pose_top = deepcopy(new_pose)
+            new_pose_top.pose.position.z += self.task_ball_radius / 2
+            self.waypoint_queue.append(new_pose_top)
+            #self.waypoint_queue.append(new_pose)
             self.waypoint_queue_num.release() # semaphor.up
             self.len_waypoint_queue += 1
 
@@ -248,12 +297,6 @@ class RobDroneControl():
         self.waypoint_queue_lock.release()
 
     def waypoint_cb(self, msg: PoseArray):
-        #if self.received_waypoints is not None:
-        #    print("Received waypoints is not None (already got them)")
-        #    return
-        #if self.t_map_global is None:
-        #    print("Haven't recieved global vicon position estimate yet")
-        #    return
         if not self.test_ready:
             print("Didn't call test yet")
             return
@@ -264,7 +307,7 @@ class RobDroneControl():
         self.test_task_3()
 
     def can_launch(self):
-        return self.current_pose.pose.position.z < self.on_ground_ths and self.len_waypoint_queue == 0
+        return self.current_t_map_dots.pose.position.z < self.on_ground_ths and self.len_waypoint_queue == 0
 
     def can_test(self):
         return self.len_waypoint_queue == 0
@@ -280,19 +323,15 @@ class RobDroneControl():
     def compute_twist_command(self):
         if self.current_waypoint is None:
             return Twist()
-        res = self.local_planner.get_twist(self.current_pose, self.current_waypoint)
-        #vel = np.clip(goal_cfg[:3] - curr_cfg[:3], a_min = -self.max_speed, a_max = self.max_speed)
-        #res = Twist()
-        #res.linear.x = vel[0]
-        #res.linear.y = vel[1]
-        #res.linear.z = vel[2]
-        return res
+        twist_dots = self.local_planner.get_twist(self.current_t_map_dots, self.current_waypoint)
+        twist_base = transform_twist(twist_dots, self.t_base_dots)
+        return twist_base
 
     def run(self):
         rate = rospy.Rate(20)
 
         print(f"Trying to connect to drone...")
-        while((not rospy.is_shutdown() and not self.current_state.connected) or (self.current_pose is None)):
+        while((not rospy.is_shutdown() and not self.current_state.connected) or (self.current_t_map_dots is None)):
             rate.sleep()
         print(f"Connected!")
         self.active = True
@@ -300,11 +339,12 @@ class RobDroneControl():
         while(not rospy.is_shutdown()):
             #self.setpoint_position_pub.publish(self.current_waypoint)
             self.setpoint_vel_pub.publish(self.compute_twist_command())
-            if self.current_waypoint is None or self.pose_is_close(self.current_waypoint, self.current_pose):
+            if self.current_waypoint is None or self.pose_is_close(self.current_waypoint, self.current_t_map_dots):
                 #self.queue_lock.acquire()
                 if self.len_waypoint_queue > 0:
                     self.current_waypoint = self.waypoint_queue_pop()
-                    self.current_waypoint_pub.publish(self.current_waypoint)
+                    cfg = get_config_from_pose_stamped(self.current_waypoint)
+                    self.publish_sphere_marker(cfg[0], cfg[1], cfg[2], self.waypoint_trans_ths)
                 #self.queue_lock.release()
             rate.sleep()
 

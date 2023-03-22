@@ -2,9 +2,11 @@ import rospy
 import numpy as np
 from tf.transformations import quaternion_matrix, quaternion_from_matrix
 import tf_conversions
-from geometry_msgs.msg import PoseStamped, TransformStamped, Pose, Quaternion
+from geometry_msgs.msg import PoseStamped, TransformStamped, Pose, Quaternion, Twist
 import math
 from nav_msgs.msg import Path
+from visualization_msgs.msg import Marker
+import tf.transformations as tf_transform
 
 class Colors:
     """
@@ -265,3 +267,134 @@ def ros_q_from_np_q(np_q):
     q = Quaternion()
     q.x = np_q[0]; q.y = np_q[1]; q.z = np_q[2]; q.w = np_q[3]
     return q
+
+def make_sphere_marker(x: float, y: float, z: float, r: float):
+    marker = Marker()
+    marker.header.frame_id = "map"
+    marker.ns = "sphere"
+    marker.id = 0
+    marker.type = Marker.SPHERE
+    marker.action = Marker.ADD
+    marker.pose.position.x = x
+    marker.pose.position.y = y
+    marker.pose.position.z = z
+    marker.pose.orientation.x = 0
+    marker.pose.orientation.y = 0
+    marker.pose.orientation.z = 0
+    marker.pose.orientation.w = 1
+    marker.scale.x = r
+    marker.scale.y = r
+    marker.scale.z = r
+    marker.color.r = 1.0
+    marker.color.g = 0.0
+    marker.color.b = 0.0
+    marker.color.a = 0.5
+    marker.lifetime = rospy.Duration()
+
+    marker.header.stamp = rospy.Time.now()
+    return marker
+
+def transform_twist(twist_b: Twist, t_a_b: np.array):
+    # Extract rotation matrix r_a_b and translation vector p from the transformation matrix
+    r_a_b = t_a_b[:3, :3]
+    p = t_a_b[:3, 3]
+
+    # Compute the skew-symmetric matrix from the translation vector p
+    p_x = np.array([
+        [0, -p[2], p[1]],
+        [p[2], 0, -p[0]],
+        [-p[1], p[0], 0]
+    ])
+
+    # Compute the adjoint transformation matrix
+    ad_t_a_b = np.zeros((6, 6))
+    ad_t_a_b[:3, :3] = r_a_b
+    ad_t_a_b[:3, 3:] = p_x @ r_a_b
+    ad_t_a_b[3:, 3:] = r_a_b
+    #ad_t_a_b = np.block([
+    #    [r_a_b, p_x @ r_a_b]
+    #    [np.zeros((3, 3)), r_a_b],
+    #])
+
+    # Convert Twist command to a 6x1 numpy array
+    twist_b_np = np.array([
+        [twist_b.linear.x],
+        [twist_b.linear.y],
+        [twist_b.linear.z],
+        [twist_b.angular.x],
+        [twist_b.angular.y],
+        [twist_b.angular.z]
+    ])
+
+    # Transform the Twist command
+    twist_a_np = ad_t_a_b @ twist_b_np
+
+    # Convert the transformed numpy array back to a Twist message
+    twist_a = Twist()
+    twist_a.linear.x = twist_a_np[0, 0]
+    twist_a.linear.y = twist_a_np[1, 0]
+    twist_a.linear.z = twist_a_np[2, 0]
+    twist_a.angular.x = twist_a_np[3, 0]
+    twist_a.angular.y = twist_a_np[4, 0]
+    twist_a.angular.z = twist_a_np[5, 0]
+
+    return twist_b
+
+def slerp_pose(pose1: Pose, pose2: Pose, timestamp1: rospy.Time, timestamp2: rospy.Time, target_timestamp: rospy.Time, frame_id: str):
+    # Calculate the interpolation factor
+    t = (target_timestamp - timestamp1).to_sec() / (timestamp2 - timestamp1).to_sec()
+    print(t)
+
+    # Interpolate positions using linear interpolation
+    position1 = np.array([pose1.position.x, pose1.position.y, pose1.position.z])
+    position2 = np.array([pose2.position.x, pose2.position.y, pose2.position.z])
+    interp_position = (1 - t) * position1 + t * position2
+
+    # Extract quaternions from the poses
+    q1 = np.array([pose1.orientation.x, pose1.orientation.y, pose1.orientation.z, pose1.orientation.w])
+    q2 = np.array([pose2.orientation.x, pose2.orientation.y, pose2.orientation.z, pose2.orientation.w])
+
+    # Interpolate quaternions using SLERP
+    interp_quaternion = tf_transform.quaternion_slerp(q1, q2, t)
+
+    # Construct the interpolated PoseStamped message
+    interp_pose = PoseStamped()
+    interp_pose.header.stamp = rospy.Time.from_sec(target_timestamp.to_sec())
+    interp_pose.header.frame_id = frame_id
+    interp_pose.pose.position.x = interp_position[0]
+    interp_pose.pose.position.y = interp_position[1]
+    interp_pose.pose.position.z = interp_position[2]
+    interp_pose.pose.orientation.x = interp_quaternion[0]
+    interp_pose.pose.orientation.y = interp_quaternion[1]
+    interp_pose.pose.orientation.z = interp_quaternion[2]
+    interp_pose.pose.orientation.w = interp_quaternion[3]
+
+    return interp_pose
+
+def transform_stamped_to_pose_stamped(transform_stamped: TransformStamped):
+    """
+    Converts a geometry_msgs/TransformStamped into a geometry_msgs/PoseStamped.
+
+    Args:
+    transform_stamped (geometry_msgs/TransformStamped): The input TransformStamped to be converted.
+
+    Returns:
+    pose_stamped (geometry_msgs/PoseStamped): The resulting PoseStamped from the given TransformStamped.
+    """
+    pose_stamped = PoseStamped()
+
+    # Copy the header from the TransformStamped to the PoseStamped
+    pose_stamped.header = transform_stamped.header
+
+    # Copy the position from the TransformStamped to the PoseStamped
+    pose_stamped.pose.position.x = transform_stamped.transform.translation.x
+    pose_stamped.pose.position.y = transform_stamped.transform.translation.y
+    pose_stamped.pose.position.z = transform_stamped.transform.translation.z
+
+    # Copy the orientation from the TransformStamped to the PoseStamped
+    pose_stamped.pose.orientation.x = transform_stamped.transform.rotation.x
+    pose_stamped.pose.orientation.y = transform_stamped.transform.rotation.y
+    pose_stamped.pose.orientation.z = transform_stamped.transform.rotation.z
+    pose_stamped.pose.orientation.w = transform_stamped.transform.rotation.w
+
+    return pose_stamped
