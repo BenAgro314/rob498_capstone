@@ -70,7 +70,7 @@ class RobDroneControl():
         # global: vicon frame
         # map: the frame used by the px4
         # base: the frame attached to the px4
-        self.t_map_global: Optional[np.array] = None
+        self.t_map_global: np.array = np.eye(4) # : Optional[np.array] = None
         
         # for viz / outward coms
         #self.current_waypoint_pub = rospy.Publisher("rob498/current_waypoint", PoseStamped, queue_size=10)
