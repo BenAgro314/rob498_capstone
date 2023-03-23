@@ -5,7 +5,7 @@ from nav_msgs.msg import Path
 from typing import Optional
 import numpy as np
 from geometry_msgs.msg import PoseStamped, Twist
-from offboard_py.scripts.utils import are_angles_close, pose_stamped_to_numpy, get_config_from_pose_stamped, se2_pose_list_to_path, shortest_signed_angle
+from offboard_py.scripts.utils import are_angles_close, pose_stamped_to_numpy, get_config_from_pose_stamped, se2_pose_list_to_path, shortest_signed_angle, transform_twist
 import warnings
 
 class LocalPlannerType(Enum):
@@ -28,6 +28,7 @@ class LocalPlanner:
         self.trans_ths = trans_ths
         self.mode=mode
         self.yaw_ths=yaw_ths # 10 deg
+        self.a_max = 0.25
         #self.num_substeps=num_substeps
         #self.horizon=horizon
         #self.local_path_pub = rospy.Publisher('~local_path', Path, queue_size=1)
@@ -118,21 +119,30 @@ class LocalPlanner:
         
         #return control
 
-    def get_twist(self, curr_pose: PoseStamped, goal_pose: PoseStamped) -> Twist:
-        curr_cfg = get_config_from_pose_stamped(curr_pose)
-        goal_cfg = get_config_from_pose_stamped(goal_pose)
+    def get_speed(self, goal_vec: np.array):
+        return np.clip(np.linalg.norm(goal_vec), a_min=0, a_max=self.v_max)
+        #x = np.linalg.norm(goal_vec)
+        #if x >= (self.v_max**2 / (2 * self.a_max)):
+        #    return self.v_max
+        #else:
+        #    return 2 * self.a_max * x
+
+    def get_twist(self, t_map_d: PoseStamped, t_map_d_goal: PoseStamped) -> Twist:
+        curr_cfg = get_config_from_pose_stamped(t_map_d)
+        goal_cfg = get_config_from_pose_stamped(t_map_d_goal)
 
         goal_vec = goal_cfg[:3] - curr_cfg[:3] # (x, y, z)
         # if we are within a ths, use non holonomic control (likely safe)
         if np.linalg.norm(goal_vec) < self.trans_ths or self.mode == LocalPlannerType.NON_HOLONOMIC:
-            twist = Twist()
-            if np.linalg.norm(goal_vec) > self.v_max:
-                goal_vec = self.v_max * goal_vec / np.linalg.norm(goal_vec)
-            twist.linear.x = goal_vec[0]
-            twist.linear.y = goal_vec[1]
-            twist.linear.z = goal_vec[2]
-            return twist 
+            twist_m = Twist()
+            goal_vec = self.get_speed(goal_vec) * goal_vec / np.linalg.norm(goal_vec)
+            twist_m.linear.x = goal_vec[0]
+            twist_m.linear.y = goal_vec[1]
+            twist_m.linear.z = goal_vec[2]
+            twist_d = transform_twist(twist_m, np.linalg.inv(pose_stamped_to_numpy(t_map_d)))
+            return twist_d
         else: # use diff drive control
+            raise NotImplementedError("Only NON_HOLONOMIC controller has been implemented")
             v_x_y, omega = self.get_2d_cmd(curr_cfg, goal_cfg)
             # convert to twist in map frame
             twist = Twist()

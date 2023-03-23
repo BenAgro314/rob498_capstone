@@ -106,10 +106,14 @@ class RobDroneControl():
         self.marker_pub.publish(marker)
 
     def vicon_callback(self, vicon_pose: TransformStamped):
-        if self.current_t_map_dots is None or self.prev_t_map_dots is None:
-            return
         vicon_pose=transform_stamped_to_pose_stamped(vicon_pose)
-        if self.prev_vicon_pose is None:
+        if self.prev_vicon_pose is None or self.current_t_map_dots is None or self.prev_t_map_dots is None:
+            self.prev_vicon_pose = vicon_pose
+            return
+        # this filters out if we are sent two consecutive vicon messages at the same time
+        # seems to occur during sim, maybe not during real
+        if vicon_pose.header.stamp == self.prev_vicon_pose.header.stamp:
+            print(f"{Colors.CYAN}Warning: received two consective vicon poses with the same timestamp {Colors.RESET}")
             self.prev_vicon_pose = vicon_pose
             return
         interp_t_global_dots = False
@@ -122,8 +126,8 @@ class RobDroneControl():
                 interp_t_global_dots = True
             else:
                 interp_time = vicon_pose.header.stamp
-                pose1 = self.prev_t_map_dots
-                pose2 = self.current_t_map_dots
+                pose1 = deepcopy(self.prev_t_map_dots)
+                pose2 = deepcopy(self.current_t_map_dots)
                 interp_t_global_dots = False
         # slerp
         interp_pose = pose_stamped_to_numpy(
