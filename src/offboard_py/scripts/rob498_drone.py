@@ -76,8 +76,6 @@ class RobDroneControl():
         #self.current_waypoint_pub = rospy.Publisher("rob498/current_waypoint", PoseStamped, queue_size=10)
         self.current_path_pub = rospy.Publisher("rob498/waypoint_queue", Path, queue_size=10)
         self.current_t_map_dots: Optional[PoseStamped] = None
-        self.prev_vicon_pose: Optional[PoseStamped] = None
-        self.prev_t_map_dots: Optional[PoseStamped] = None
 
         self.current_state = State()
 
@@ -106,55 +104,11 @@ class RobDroneControl():
         self.marker_pub.publish(marker)
 
     def vicon_callback(self, vicon_pose: TransformStamped):
-        vicon_pose=transform_stamped_to_pose_stamped(vicon_pose)
-        if self.prev_vicon_pose is None or self.current_t_map_dots is None or self.prev_t_map_dots is None:
-            self.prev_vicon_pose = vicon_pose
+        # TODO: timestamp interp for async message
+        if self.current_t_map_dots is None:
             return
-        # this filters out if we are sent two consecutive vicon messages at the same time
-        # seems to occur during sim, maybe not during real
-        if vicon_pose.header.stamp == self.prev_vicon_pose.header.stamp:
-            print(f"{Colors.CYAN}Warning: received two consective vicon poses with the same timestamp {Colors.RESET}")
-            self.prev_vicon_pose = vicon_pose
-            return
-        interp_t_global_dots = False
-        # do as little as possible in the lock
-        with self.current_pose_lock:
-            if vicon_pose.header.stamp > self.current_t_map_dots.header.stamp:
-                interp_time = self.current_t_map_dots.header.stamp
-                pose1 = self.prev_vicon_pose
-                pose2 = vicon_pose
-                interp_t_global_dots = True
-            else:
-                interp_time = vicon_pose.header.stamp
-                pose1 = deepcopy(self.prev_t_map_dots)
-                pose2 = deepcopy(self.current_t_map_dots)
-                interp_t_global_dots = False
-        # slerp
-        interp_pose = pose_stamped_to_numpy(
-                slerp_pose(
-                pose1.pose,
-                pose2.pose,
-                pose1.header.stamp,
-                pose2.header.stamp,
-                interp_time,
-                frame_id=""
-            )
-        )
-        if interp_t_global_dots:
-            t_global_dots = interp_pose
-            t_map_dots = pose_stamped_to_numpy(self.current_t_map_dots)
-        else:
-            t_global_dots = pose_stamped_to_numpy(vicon_pose)
-            t_map_dots = interp_pose
-        self.t_map_global = t_map_dots @ np.linalg.inv(t_global_dots)
-        self.prev_vicon_pose = vicon_pose
-
-    #def synchronized_vicon_callback(self, vicon_pose: TransformStamped, mavros_pose: PoseStamped):
-    #    t_global_dots = transform_stamped_to_numpy(vicon_pose)
-    #    t_global_base = deepcopy(t_global_dots)
-    #    t_global_base[2, 3] += 0.05 # check this offset distance 
-    #    t_map_base = pose_stamped_to_numpy(mavros_pose)
-    #    self.t_map_global = t_map_base @ np.linalg.inv(t_global_base)
+        t_global_dots = transform_stamped_to_numpy(vicon_pose)
+        self.t_map_global = pose_stamped_to_numpy(self.current_t_map_dots) @ np.linalg.inv(t_global_dots)
 
     def waypoint_queue_push(self, pose: PoseStamped):
         self.waypoint_queue_lock.acquire()
@@ -178,9 +132,7 @@ class RobDroneControl():
     def pose_cb(self, t_map_base: PoseStamped):
         t_map_base = pose_stamped_to_numpy(t_map_base)
         t_map_dots = numpy_to_pose_stamped(t_map_base @ self.t_base_dots, frame_id='map')
-        with self.current_pose_lock:
-            self.prev_t_map_dots = self.current_t_map_dots
-            self.current_t_map_dots = t_map_dots
+        self.current_t_map_dots = t_map_dots
 
     def state_cb(self, msg: State):
         self.current_state = msg
@@ -284,16 +236,16 @@ class RobDroneControl():
             # 3. turn back into a tran
             new_pose = numpy_to_pose_stamped(t_map_dotsi, self.current_t_map_dots.header.frame_id)
 
-            new_pose_bottom = deepcopy(new_pose)
-            new_pose_bottom.pose.position.z -= self.task_ball_radius / 2
-            self.waypoint_queue.append(new_pose_bottom)
-            self.waypoint_queue_num.release() # semaphor.up
-            self.len_waypoint_queue += 1
+            #new_pose_bottom = deepcopy(new_pose)
+            #new_pose_bottom.pose.position.z -= self.task_ball_radius / 2
+            #self.waypoint_queue.append(new_pose_bottom)
+            #self.waypoint_queue_num.release() # semaphor.up
+            #self.len_waypoint_queue += 1
 
-            new_pose_top = deepcopy(new_pose)
-            new_pose_top.pose.position.z += self.task_ball_radius / 2
-            self.waypoint_queue.append(new_pose_top)
-            #self.waypoint_queue.append(new_pose)
+            #new_pose_top = deepcopy(new_pose)
+            #new_pose_top.pose.position.z += self.task_ball_radius / 2
+            #self.waypoint_queue.append(new_pose_top)
+            self.waypoint_queue.append(new_pose)
             self.waypoint_queue_num.release() # semaphor.up
             self.len_waypoint_queue += 1
 
