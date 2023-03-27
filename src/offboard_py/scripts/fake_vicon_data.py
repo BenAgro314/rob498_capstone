@@ -12,6 +12,7 @@ class FakeVicon:
 		self.link_pose.transform.translation.x = 10.0
 		self.link_pose.transform.translation.y = 10.0
 		self.link_pose.transform.translation.z = 10.0
+		self.link_pose.transform.rotation.w = 1.0
 
 
 if __name__ == '__main__':
