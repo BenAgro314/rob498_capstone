@@ -20,8 +20,8 @@ class FakeVicon:
 		self.link_pose.header.frame_id="camera_odom_frame"
 		self.link_pose.child_frame_id="camera_pose_frame"
 
-	#def update(self):
-		#self.link_pose.transform.translation.z = 0.1 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
+	def update(self):
+		self.link_pose.transform.translation.z = 0.1 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
 
 
 if __name__ == '__main__':
@@ -30,5 +30,5 @@ if __name__ == '__main__':
 	rate = rospy.Rate(20)
 	while not rospy.is_shutdown():
 		fv.pose_pub.publish(fv.link_pose)
-		#fv.update()
+		fv.update()
 		rate.sleep()
