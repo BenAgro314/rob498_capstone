@@ -15,6 +15,8 @@ class ViconBridge():
 
     def vicon_update(self, transform: TransformStamped):
         odom = transform_stamped_to_odometry(transform)
+        odom.header.frame_id = transform.header.frame_id
+        odom.child_frame_id = transform.child_frame_id
         #matrix = transform_stamped_to_numpy(transform)
         #theta = np.pi
         #T = np.array([
