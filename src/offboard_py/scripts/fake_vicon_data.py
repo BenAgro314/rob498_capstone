@@ -34,9 +34,9 @@ class FakeVicon:
 		self.link_pose.transform.rotation.w = 1.0
 		self.link_pose.header.frame_id="camera_odom_frame"
 		self.link_pose.child_frame_id="camera_pose_frame"
-		self.link_pose.transform.translation.x = 0.2 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
-		self.link_pose.transform.translation.y = 0.3 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
-		self.link_pose.transform.translation.z = 0.1 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
+		#self.link_pose.transform.translation.x = 0.2 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
+		#self.link_pose.transform.translation.y = 0.3 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
+		#self.link_pose.transform.translation.z = 0.1 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
 
 
 if __name__ == '__main__':
