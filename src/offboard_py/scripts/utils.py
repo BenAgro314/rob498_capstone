@@ -4,7 +4,7 @@ from tf.transformations import quaternion_matrix, quaternion_from_matrix
 import tf_conversions
 from geometry_msgs.msg import PoseStamped, TransformStamped, Pose, Quaternion, Twist
 import math
-from nav_msgs.msg import Path
+from nav_msgs.msg import Path, Odometry
 from visualization_msgs.msg import Marker
 import tf.transformations as tf_transform
 
@@ -426,3 +426,38 @@ def transform_stamped_to_pose_stamped(transform_stamped: TransformStamped):
     pose_stamped.pose.orientation.w = transform_stamped.transform.rotation.w
 
     return pose_stamped
+
+def transform_stamped_to_odometry(transform_stamped: TransformStamped):
+    # Create an Odometry message
+    odom = Odometry()
+    
+    # Copy header information
+    odom.header = transform_stamped.header
+    
+    # Set child frame ID (e.g., "base_link")
+    odom.child_frame_id = "base_link"
+    
+    # Copy pose information from TransformStamped to Odometry
+    odom.pose.pose.position.x = transform_stamped.transform.translation.x
+    odom.pose.pose.position.y = transform_stamped.transform.translation.y
+    odom.pose.pose.position.z = transform_stamped.transform.translation.z
+    odom.pose.pose.orientation.x = transform_stamped.transform.rotation.x
+    odom.pose.pose.orientation.y = transform_stamped.transform.rotation.y
+    odom.pose.pose.orientation.z = transform_stamped.transform.rotation.z
+    odom.pose.pose.orientation.w = transform_stamped.transform.rotation.w
+    
+    # Set pose covariance to zero (unknown)
+    odom.pose.covariance = [0] * 36
+    
+    # Set linear and angular velocities to zero (unknown)
+    odom.twist.twist.linear.x = 0
+    odom.twist.twist.linear.y = 0
+    odom.twist.twist.linear.z = 0
+    odom.twist.twist.angular.x = 0
+    odom.twist.twist.angular.y = 0
+    odom.twist.twist.angular.z = 0
+    
+    # Set twist covariance to zero (unknown)
+    odom.twist.covariance = [0] * 36
+    
+    return odom

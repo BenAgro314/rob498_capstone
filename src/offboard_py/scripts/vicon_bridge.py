@@ -3,17 +3,19 @@
 import rospy
 import numpy as np
 from geometry_msgs.msg import PoseStamped, TransformStamped
-from offboard_py.scripts.utils import numpy_to_pose_stamped, transform_stamped_to_numpy
+from offboard_py.scripts.utils import numpy_to_pose_stamped, transform_stamped_to_numpy, transform_stamped_to_odometry
+from nav_msgs import Odometry
 
 class ViconBridge():
 
     def __init__(self):
-        self.mavros_vision_pose_pub = rospy.Publisher("mavros/vision_pose/pose", PoseStamped, queue_size=10)
+        self.mavros_vision_pose_pub = rospy.Publisher("mavros/odometry/out", Odometry, queue_size=10)
         #local_pose_sub = rospy.Subscriber("mavros/local_position/pose", PoseStamped, callback=print_pose)
         self.vicon_pose_sub = rospy.Subscriber("vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback = self.vicon_update)
 
     def vicon_update(self, transform: TransformStamped):
-        matrix = transform_stamped_to_numpy(transform)
+        odom = transform_stamped_to_odometry(transform)
+        #matrix = transform_stamped_to_numpy(transform)
         #theta = np.pi
         #T = np.array([
         #    [1, 0, 0, 0],
@@ -22,11 +24,11 @@ class ViconBridge():
         #    [0, 0, 0, 1],
         #])
         #matrix = T @ matrix
-        pose = numpy_to_pose_stamped(matrix, frame_id = "map")
-        self.mavros_vision_pose_pub.publish(pose)
+        #pose = numpy_to_pose_stamped(matrix, frame_id = "map")
+        self.mavros_vision_pose_pub.publish(odom)
 
 if __name__ == "__main__":
-    rospy.init_node("vicon_sim")
+    rospy.init_node("vicon_bridge")
     vb = ViconBridge()
     rospy.spin()
 
