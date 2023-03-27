@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import rospy
-from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Pose, TransformStamped
 from offboard_py.scripts.utils import pose_to_transform_stamped
 
