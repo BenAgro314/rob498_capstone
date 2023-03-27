@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from offboard_py.scripts.utils import numpy_to_pose_stamped, transform_stamped_to_numpy, transform_stamped_to_odometry
-from nav_msgs import Odometry
+from nav_msgs.msg import Odometry
 
 class ViconBridge():
 
