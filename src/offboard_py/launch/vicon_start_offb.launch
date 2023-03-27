@@ -8,10 +8,6 @@
 	<arg name="tgt_system" default="1" />
 	<arg name="tgt_component" default="1" />
 	
-	<!-- Launch realsense bridge -->
-	<include file="$(find px4_realsense_bridge)/launch/bridge.launch" >
-	</include>
-
 	<!-- Launch MavROS -->
 	<group ns="$(arg ns)">
 		<include file="$(find mavros)/launch/node.launch">
