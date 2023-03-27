@@ -3,7 +3,7 @@ from typing import List, Optional
 from offboard_py.scripts.local_planner import LocalPlanner, LocalPlannerType 
 
 #from offboard_py.scripts.path_planner import find_traj
-from offboard_py.scripts.utils import Colors, are_angles_close, get_config_from_pose_stamped, make_sphere_marker, pose_stamped_to_transform_stamped, shortest_signed_angle, slerp_pose, transform_stamped_to_pose_stamped, transform_twist
+from offboard_py.scripts.utils import Colors, are_angles_close, config_to_transformation_matrix, get_config_from_pose_stamped, make_sphere_marker, numpy_to_transform_stamped, pose_stamped_to_transform_stamped, shortest_signed_angle, slerp_pose, transform_stamped_to_pose_stamped, transform_twist
 from offboard_py.scripts.utils import pose_to_numpy, transform_stamped_to_numpy, pose_stamped_to_numpy, numpy_to_pose_stamped
 from threading import Semaphore, Lock
 import rospy
@@ -16,6 +16,11 @@ from nav_msgs.msg import Path
 import message_filters
 import tf2_ros
 from visualization_msgs.msg import Marker
+
+USE_SLERP=True
+SWEEP_HGT=False
+USE_ORIENTATION=False
+PERP=False
 
 class RobDroneControl():
 
@@ -38,20 +43,14 @@ class RobDroneControl():
 
         # TODO: make these arguments / config files
         self.waypoint_trans_ths = 0.08 # used in pose_is_close
+        self.waypoint_yaw_ths = np.deg2rad(10.0) # used in pose_is_close
         self.on_ground_ths = 0.2
         self.launch_height = 1.6475 # check this
         self.land_height = 0.05
         self.max_speed = 0.5 # m/s
-        #self.max_rot_speed = 0.75 # rad/s
         self.task_ball_radius = 0.15
 
-        self.flight_limits = [
-            [-3.0, 3.0], # x
-            [-3.0, 3.0], # y
-            [0.0, 3.0], # z
-        ]
-
-        self.local_planner = LocalPlanner(mode=LocalPlannerType.NON_HOLONOMIC, v_max=self.max_speed)
+        self.local_planner = LocalPlanner() 
 
         self.state_sub = rospy.Subscriber("mavros/state", State, callback = self.state_cb)
         #self.setpoint_position_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
@@ -61,21 +60,17 @@ class RobDroneControl():
 
         self.vicon_sub = rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, self.vicon_callback)
         self.test_ready = False
-        #self.local_pose_sub_sync = message_filters.Subscriber("mavros/local_position/pose", PoseStamped)
-        #self.vicon_pose_sub = message_filters.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped)
-
-        #self.time_synchronizer = message_filters.TimeSynchronizer([self.vicon_pose_sub, self.local_pose_sub_sync], queue_size=10)
-        #self.time_synchronizer.registerCallback(self.synchronized_vicon_callback)
 
         # global: vicon frame
         # map: the frame used by the px4
         # base: the frame attached to the px4
-        self.t_map_global: np.array = np.eye(4) # : Optional[np.array] = None
+        self.t_map_global: np.array = np.eye(4) # assume no transformation at first
         
         # for viz / outward coms
-        #self.current_waypoint_pub = rospy.Publisher("rob498/current_waypoint", PoseStamped, queue_size=10)
         self.current_path_pub = rospy.Publisher("rob498/waypoint_queue", Path, queue_size=10)
         self.current_t_map_dots: Optional[PoseStamped] = None
+        self.prev_vicon_pose: Optional[PoseStamped] = None
+        self.prev_t_map_dots: Optional[PoseStamped] = None
 
         self.current_state = State()
 
@@ -97,6 +92,7 @@ class RobDroneControl():
                 [0, 0, 0, 1],
             ]
         )
+        #self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_dots_base, frame_id='dots_link', child_frame_id='base_link'))
         self.t_base_dots = np.linalg.inv(self.t_dots_base)
 
     def publish_sphere_marker(self, x: float, y: float, z:float, r: float):
@@ -104,11 +100,56 @@ class RobDroneControl():
         self.marker_pub.publish(marker)
 
     def vicon_callback(self, vicon_pose: TransformStamped):
-        # TODO: timestamp interp for async message
-        if self.current_t_map_dots is None:
-            return
-        t_global_dots = transform_stamped_to_numpy(vicon_pose)
-        self.t_map_global = pose_stamped_to_numpy(self.current_t_map_dots) @ np.linalg.inv(t_global_dots)
+        if USE_SLERP:
+            vicon_pose.header.stamp=rospy.Time.now()
+            vicon_pose=transform_stamped_to_pose_stamped(vicon_pose)
+            if self.prev_vicon_pose is None or self.current_t_map_dots is None or self.prev_t_map_dots is None:
+                self.prev_vicon_pose = vicon_pose
+                return
+            # this filters out if we are sent two consecutive vicon messages at the same time
+            # seems to occur during sim, maybe not during real
+            if vicon_pose.header.stamp == self.prev_vicon_pose.header.stamp:
+                print(f"{Colors.CYAN}Warning: received two consective vicon poses with the same timestamp {Colors.RESET}")
+                self.prev_vicon_pose = vicon_pose
+                return
+            interp_t_global_dots = False
+            # do as little as possible in the lock
+            with self.current_pose_lock:
+                if vicon_pose.header.stamp > self.current_t_map_dots.header.stamp:
+                    interp_time = self.current_t_map_dots.header.stamp
+                    pose1 = self.prev_vicon_pose
+                    pose2 = vicon_pose
+                    interp_t_global_dots = True
+                else:
+                    interp_time = vicon_pose.header.stamp
+                    pose1 = deepcopy(self.prev_t_map_dots)
+                    pose2 = deepcopy(self.current_t_map_dots)
+                    interp_t_global_dots = False
+            # slerp
+            interp_pose = pose_stamped_to_numpy(
+                    slerp_pose(
+                    pose1.pose,
+                    pose2.pose,
+                    pose1.header.stamp,
+                    pose2.header.stamp,
+                    interp_time,
+                    frame_id=""
+                )
+            )
+            if interp_t_global_dots:
+                t_global_dots = interp_pose
+                t_map_dots = pose_stamped_to_numpy(self.current_t_map_dots)
+            else:
+                t_global_dots = pose_stamped_to_numpy(vicon_pose)
+                t_map_dots = interp_pose
+            self.t_map_global = t_map_dots @ np.linalg.inv(t_global_dots)
+            self.prev_vicon_pose = vicon_pose
+        else:
+            if self.current_t_map_dots is not None:
+                with self.current_pose_lock:
+                    t_global_dots = transform_stamped_to_numpy(vicon_pose)
+                    self.t_map_global = pose_stamped_to_numpy(self.current_t_map_dots) @ np.linalg.inv(t_global_dots)
+        #self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_map_global, frame_id='map', child_frame_id='global'))
 
     def waypoint_queue_push(self, pose: PoseStamped):
         self.waypoint_queue_lock.acquire()
@@ -130,9 +171,12 @@ class RobDroneControl():
         return res
 
     def pose_cb(self, t_map_base: PoseStamped):
+        #self.broadcaster.sendTransform(pose_stamped_to_transform_stamped(t_map_base, parent_frame_id='map', child_frame_id='base_link'))
         t_map_base = pose_stamped_to_numpy(t_map_base)
         t_map_dots = numpy_to_pose_stamped(t_map_base @ self.t_base_dots, frame_id='map')
-        self.current_t_map_dots = t_map_dots
+        with self.current_pose_lock:
+            self.prev_t_map_dots = self.current_t_map_dots
+            self.current_t_map_dots = t_map_dots
 
     def state_cb(self, msg: State):
         self.current_state = msg
@@ -228,26 +272,58 @@ class RobDroneControl():
             return 
 
         self.waypoint_queue_lock.acquire()
-        for i, pose in enumerate(self.received_waypoints.poses):
-            # 1. convert the pose into a numpy array to transform it
+
+        list_t_map_dots = [pose_stamped_to_numpy(self.current_t_map_dots)]
+        for pose in self.received_waypoints.poses:
             t_global_dotsi = pose_to_numpy(pose)
-            # 2. transform it into the map frame
             t_map_dotsi = self.t_map_global @ t_global_dotsi
-            # 3. turn back into a tran
-            new_pose = numpy_to_pose_stamped(t_map_dotsi, self.current_t_map_dots.header.frame_id)
+            list_t_map_dots.append(t_map_dotsi)
 
-            #new_pose_bottom = deepcopy(new_pose)
-            #new_pose_bottom.pose.position.z -= self.task_ball_radius / 2
-            #self.waypoint_queue.append(new_pose_bottom)
-            #self.waypoint_queue_num.release() # semaphor.up
-            #self.len_waypoint_queue += 1
+        if USE_ORIENTATION:
+            prev_yaw = None
+            for t_map_dotsi, t_map_dotsip1 in zip(list_t_map_dots[:-1], list_t_map_dots[1:]):
+                pose = numpy_to_pose_stamped(t_map_dotsi, self.current_t_map_dots.header.frame_id)
+                next_pose = numpy_to_pose_stamped(t_map_dotsip1, self.current_t_map_dots.header.frame_id)
 
-            #new_pose_top = deepcopy(new_pose)
-            #new_pose_top.pose.position.z += self.task_ball_radius / 2
-            #self.waypoint_queue.append(new_pose_top)
-            self.waypoint_queue.append(new_pose)
-            self.waypoint_queue_num.release() # semaphor.up
-            self.len_waypoint_queue += 1
+                x1, y1, z1 = get_config_from_pose_stamped(pose)[:3]
+                x2, y2, z2 = get_config_from_pose_stamped(next_pose)[:3]
+                #t_global_dotsi = pose_stamped_to_numpy(pose)
+                #t_global_dotsip1 = pose_stamped_to_numpy(next_pose)
+                yaw = np.arctan2(y2 - y1, x2 - x1)
+                if PERP:
+                    yaw += np.pi/2
+                
+                if prev_yaw is not None:
+                    pose = numpy_to_pose_stamped(config_to_transformation_matrix(x1, y1, z1, prev_yaw))
+                self.waypoint_queue.append(pose)
+                self.waypoint_queue_num.release() # semaphor.up
+                self.len_waypoint_queue += 1
+
+                pose_facing_next = numpy_to_pose_stamped(config_to_transformation_matrix(x1, y1, z2, yaw))
+                self.waypoint_queue.append(pose_facing_next)
+                self.waypoint_queue_num.release() # semaphor.up
+                self.len_waypoint_queue += 1
+                prev_yaw = yaw
+        else:
+            for t_map_dotsi in list_t_map_dots:
+                new_pose = numpy_to_pose_stamped(t_map_dotsi, self.current_t_map_dots.header.frame_id)
+                if SWEEP_HGT:
+                    new_pose_bottom = deepcopy(new_pose)
+                    new_pose_bottom.pose.position.z -= self.task_ball_radius / 2
+                    self.waypoint_queue.append(new_pose_bottom)
+                    self.waypoint_queue_num.release() # semaphor.up
+                    self.len_waypoint_queue += 1
+
+                    new_pose_top = deepcopy(new_pose)
+                    new_pose_top.pose.position.z += self.task_ball_radius / 2
+                    self.waypoint_queue.append(new_pose_top)
+                    #self.waypoint_queue.append(new_pose)
+                    self.waypoint_queue_num.release() # semaphor.up
+                    self.len_waypoint_queue += 1
+                else:
+                    self.waypoint_queue.append(new_pose)
+                    self.waypoint_queue_num.release() # semaphor.up
+                    self.len_waypoint_queue += 1
 
         self.publish_current_queue()
         self.waypoint_queue_lock.release()
@@ -273,14 +349,21 @@ class RobDroneControl():
         cfg1 = get_config_from_pose_stamped(pose1)
         cfg2 = get_config_from_pose_stamped(pose2)
         trans_is_close =  np.linalg.norm(cfg1[:3] - cfg2[:3]) < self.waypoint_trans_ths
-        #print(f"Trans is close: {trans_is_close}. Yaw is close: {yaw_is_close}")
-        return trans_is_close
+        if USE_ORIENTATION:
+            yaw_is_close = are_angles_close(cfg1[-1], cfg2[-1], self.waypoint_yaw_ths)
+            return trans_is_close and yaw_is_close
+        else:
+            return trans_is_close
 
     def compute_twist_command(self):
         if self.current_waypoint is None:
             return Twist()
         twist_dots = self.local_planner.get_twist(self.current_t_map_dots, self.current_waypoint)
         twist_base = transform_twist(twist_dots, self.t_base_dots)
+        if not USE_ORIENTATION: # no angular velocity cmd
+            twist_base.angular.x = 0.0
+            twist_base.angular.y = 0.0
+            twist_base.angular.z = 0.0
         return twist_base
 
     def run(self):

@@ -93,6 +93,34 @@ def numpy_to_pose_stamped(transformation_matrix, frame_id="parent_frame"):
 
     return pose_stamped
 
+def numpy_to_transform_stamped(transformation_matrix, frame_id="parent_frame", child_frame_id=""):
+    # Check if the input is a 4x4 matrix
+    if transformation_matrix.shape != (4, 4):
+        raise ValueError("The input must be a 4x4 NumPy array")
+
+    # Extract position and rotation components
+    position = transformation_matrix[:3, 3]
+    quaternion = quaternion_from_matrix(transformation_matrix)
+
+    # Create a PoseStamped message
+    pose_stamped = TransformStamped()
+    pose_stamped.header.stamp = rospy.Time.now()
+    pose_stamped.header.frame_id = frame_id
+    pose_stamped.child_frame_id = child_frame_id
+
+    pose_stamped.transform.translation.x = position[0]
+    pose_stamped.transform.translation.y = position[1]
+    pose_stamped.transform.translation.z = position[2]
+
+    pose_stamped.transform.rotation.x = quaternion[0]
+    pose_stamped.transform.rotation.y = quaternion[1]
+    pose_stamped.transform.rotation.z = quaternion[2]
+    pose_stamped.transform.rotation.w = quaternion[3]
+
+    return pose_stamped
+
+
+
 def pose_to_transform_stamped(pose: Pose, frame_id="parent_frame", child_frame_id="child_frame"):
     # Extract position and orientation from the Pose message
     position = pose.position
@@ -166,9 +194,9 @@ def get_config_from_pose_stamped(pose_stamped):
     z = pose_stamped.pose.position.z
 
     # Convert the quaternion to Euler angles (roll, pitch, yaw)
-    _, _, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
+    roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
-    return np.array([x, y, z, yaw])
+    return np.array([x, y, z, roll, pitch, yaw])
 
 def quaternion_to_euler(x, y, z, w):
     """
@@ -228,7 +256,7 @@ def shortest_signed_angle(a1, a2):
         float: The shortest signed angle to rotate from a1 to a2 in radians.
     """
     # Compute the difference between the angles, considering the wrap-around at 2*pi
-    diff = math.atan2(math.sin(a2 - a1), math.cos(a2 - a1))
+    diff = np.arctan2(np.sin(a2 - a1), np.cos(a2 - a1))
 
     return diff
 
@@ -343,7 +371,7 @@ def transform_twist(twist_b: Twist, t_a_b: np.array):
 def slerp_pose(pose1: Pose, pose2: Pose, timestamp1: rospy.Time, timestamp2: rospy.Time, target_timestamp: rospy.Time, frame_id: str):
     # Calculate the interpolation factor
     t = (target_timestamp - timestamp1).to_sec() / (timestamp2 - timestamp1).to_sec()
-    print(t)
+    assert t >= 0.0 and t <= 1.0
 
     # Interpolate positions using linear interpolation
     position1 = np.array([pose1.position.x, pose1.position.y, pose1.position.z])

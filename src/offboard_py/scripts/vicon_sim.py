@@ -28,7 +28,7 @@ class GazeboLinkPose:
 if __name__ == '__main__':
   try:
     rospy.init_node('gazebo_link_pose', anonymous=True)
-    gp = GazeboLinkPose("iris::base_link")
+    gp = GazeboLinkPose("iris::dots_link")
     publish_rate = rospy.get_param('~publish_rate', 10)
 
     rate = rospy.Rate(publish_rate)

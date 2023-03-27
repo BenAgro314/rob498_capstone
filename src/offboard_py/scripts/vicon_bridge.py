@@ -14,7 +14,6 @@ class ViconBridge():
 
     def vicon_update(self, transform: TransformStamped):
         matrix = transform_stamped_to_numpy(transform)
-        # if we need to do any transformations
         #theta = np.pi
         #T = np.array([
         #    [1, 0, 0, 0],
