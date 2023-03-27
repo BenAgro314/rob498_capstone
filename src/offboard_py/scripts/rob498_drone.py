@@ -149,7 +149,6 @@ class RobDroneControl():
                 with self.current_pose_lock:
                     t_global_dots = transform_stamped_to_numpy(vicon_pose)
                     self.t_map_global = pose_stamped_to_numpy(self.current_t_map_dots) @ np.linalg.inv(t_global_dots)
-                    print(self.t_map_global)
         #self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_map_global, frame_id='map', child_frame_id='global'))
 
     def waypoint_queue_push(self, pose: PoseStamped):
