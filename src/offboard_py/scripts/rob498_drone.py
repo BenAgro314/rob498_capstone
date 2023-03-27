@@ -17,7 +17,7 @@ import message_filters
 import tf2_ros
 from visualization_msgs.msg import Marker
 
-USE_SLERP=True
+USE_SLERP=False
 SWEEP_HGT=False
 USE_ORIENTATION=False
 PERP=False
