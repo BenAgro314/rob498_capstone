@@ -9,6 +9,7 @@ class FakeVicon:
 
 	def __init__(self):
 		self.pose_pub = rospy.Publisher("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, queue_size = 10)
+		self.start_time=rospy.Time.now()
 		self.link_pose = TransformStamped()
 		self.link_pose.header.stamp=rospy.Time.now()
 		self.link_pose.transform.translation.x = 10.0
@@ -22,6 +23,17 @@ class FakeVicon:
 		self.link_pose.child_frame_id="camera_pose_frame"
 
 	def update(self):
+		self.link_pose = TransformStamped()
+		self.link_pose.header.stamp=rospy.Time.now()
+		self.link_pose.transform.translation.x = 10.0
+		self.link_pose.transform.translation.y = 10.0
+		self.link_pose.transform.translation.z = 10.0
+		self.link_pose.transform.rotation.x = 0.0
+		self.link_pose.transform.rotation.y = 0.0
+		self.link_pose.transform.rotation.z = 0.0
+		self.link_pose.transform.rotation.w = 1.0
+		self.link_pose.header.frame_id="camera_odom_frame"
+		self.link_pose.child_frame_id="camera_pose_frame"
 		self.link_pose.transform.translation.x += 0.01 * np.random.randn()
 		self.link_pose.transform.translation.y += 0.01 * np.random.randn()
 		self.link_pose.transform.translation.z = 0.1 * (rospy.Time.now().to_sec() - self.start_time.to_sec())
