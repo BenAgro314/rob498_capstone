@@ -22,14 +22,14 @@ class LocalPlanner:
         # e = [dx, dy, dz, droll, dpitch, dyaw].T (6, 1)
         # position gains
         self.kp = np.diag([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-        self.ki = np.diag([0.01, 0.01, 0.01, 0.0, 0.0, 0.0])
+        self.ki = np.diag([0.05, 0.05, 0.01, 0.0, 0.0, 0.0])
         self.kd = np.diag([0.3, 0.3, 0.1, 0.2, 0.2, 0.2])
 
-        self.v_max = np.array([0.5, 0.5, 0.5, 1, 1, 1]).T
+        self.v_max = np.array([0.7, 0.7, 0.5, 2, 2, 2]).T
 
         self.prev_time = None
 
-        self.max_integral = np.array([0.1, 0.1, 0.1, 1.0, 1.0, 1.0]).T
+        self.max_integral = np.array([0.3, 0.3, 0.2, 1.0, 1.0, 1.0]).T
 
 
         self.integral = np.zeros((6, 1))

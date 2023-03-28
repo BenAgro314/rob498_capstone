@@ -1,64 +1,64 @@
 poses:
 - position:
-    x: -2.31
-    y: 2.23
-    z: 1.77
+    x: 0
+    y: 0
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
     z: 0.0
     w: 1.0
 - position:
-    x: 0.09
-    y: 2.38
-    z: 1.63
+    x: 2
+    y: 2
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
     z: 0.0
     w: 1.0
 - position:
-    x: 2.74
-    y: 2.27
-    z: 0.856
+    x: 2
+    y: -2
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
     z: 0.0
     w: 1.0
 - position:
-    x: 1.61
-    y: 0.177
-    z: 1.829
+    x: -2
+    y: -2
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
     z: 0.0
     w: 1.0
 - position:
-    x: 2.15
-    y: -2.16
-    z: 1.722
+    x: -2
+    y: 2
+    z: 1.5
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+- position:
+    x: 2
+    y: 2
+    z: 1.5
   orientation:
     x: 0
     y: 0
     z: 0
     w: 1.0
 - position:
-    x: 0.989
-    y: -2.60
-    z: 1.65
+    x: 0
+    y: 0
+    z: 1.5
   orientation:
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 1.0
-- position:
-    x: -2.41
-    y: -2.55
-    z: 0.84
-  orientation:
-    x: 0.0
-    y: 0.0
-    z: 0.0
+    x: 0
+    y: 0
+    z: 0
     w: 1.0
