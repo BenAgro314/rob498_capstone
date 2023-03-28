@@ -268,12 +268,18 @@ try:
             # convert disparity to 0-255 and color it
             disp_vis = 255*(disparity - min_disp)/ num_disp
             disp_color = cv2.applyColorMap(cv2.convertScaleAbs(disp_vis,1), cv2.COLORMAP_JET)
-            color_image = cv2.cvtColor(center_undistorted["left"][:,max_disp:], cv2.COLOR_GRAY2RGB)
-            origH, origW, Channels = color_image.shape
+            image = cv2.cvtColor(center_undistorted["left"][:,max_disp:], cv2.COLOR_GRAY2RGB)
+            orig = image.copy()
+            origH, origW = orig.shape[:2]
 
-            print(origH)
-            print(origW)
-            quit()
+            newW, newH = (320, 320)
+            rW = origW / float(newW)
+            rH = origH / float(newH)
+
+            # resize the image and grab the new image dimensions
+            image = cv2.resize(image, (newW, newH))
+            (H, W) = image.shape[:2]
+
             layerNames = [
             "feature_fusion/Conv_7/Sigmoid",
             "feature_fusion/concat_3"]
@@ -283,7 +289,7 @@ try:
 
             # construct a blob from the image and then perform a forward pass of
             # the model to obtain the two output layer sets
-            blob = cv2.dnn.blobFromImage(color_image, 1.0, (W, H),
+            blob = cv2.dnn.blobFromImage(image, 1.0, (W, H),
                 (123.68, 116.78, 103.94), swapRB=True, crop=False)
             net.setInput(blob)
             (scores, geometry) = net.forward(layerNames)
@@ -315,14 +321,41 @@ try:
                 # extract the actual padded ROI
                 roi = orig[startY:endY, startX:endX]
 
+                # in order to apply Tesseract v4 to OCR text we must supply
+                # (1) a language, (2) an OEM flag of 1, indicating that the we
+                # wish to use the LSTM neural net model for OCR, and finally
+                # (3) an OEM value, in this case, 7 which implies that we are
+                # treating the ROI as a single line of text
+                config = ("-l eng --oem 1 --psm 7")
+                text = pytesseract.image_to_string(roi, config=config)
+                # add the bounding box coordinates and OCR'd text to the list
+                # of results
+                results.append(((startX, startY, endX, endY), text))
+
+            # loop over the results
+            for ((startX, startY, endX, endY), text) in results:
+                # display the text OCR'd by Tesseract
+                print("OCR TEXT")
+                print("========")
+                print("{}\n".format(text))
+                # strip out non-ASCII text so we can draw the text on the image
+                # using OpenCV, then draw the text and a bounding box surrounding
+                # the text region of the input image
+                text = "".join([c if ord(c) < 128 else "" for c in text]).strip()
+                output = orig.copy()
+                cv2.rectangle(output, (startX, startY), (endX, endY),
+                    (0, 0, 255), 2)
+                cv2.putText(output, text, (startX, startY - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
+
             if mode == "stack":
-                cv2.imshow(WINDOW_TITLE, np.hstack((color_image, disp_color)))
+                cv2.imshow(WINDOW_TITLE, np.hstack((output, disp_color)))
             if mode == "overlay":
                 ind = disparity >= min_disp
-                color_image[ind, 0] = disp_color[ind, 0]
-                color_image[ind, 1] = disp_color[ind, 1]
-                color_image[ind, 2] = disp_color[ind, 2]
-                cv2.imshow(WINDOW_TITLE, color_image)
+                output[ind, 0] = disp_color[ind, 0]
+                output[ind, 1] = disp_color[ind, 1]
+                output[ind, 2] = disp_color[ind, 2]
+                cv2.imshow(WINDOW_TITLE, output)
         key = cv2.waitKey(1)
         if key == ord('s'): mode = "stack"
         if key == ord('o'): mode = "overlay"
