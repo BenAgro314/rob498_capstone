@@ -181,7 +181,6 @@ try:
     (rm1, rm2) = cv2.fisheye.initUndistortRectifyMap(K_right, D_right, R_right, P_right, stereo_size, m1type)
     undistort_rectify = {"left"  : (lm1, lm2),
                          "right" : (rm1, rm2)}
-    pdb.set_trace()
     mode = "stack"
     while True:
         # Check if the camera has acquired any frames
@@ -229,7 +228,7 @@ try:
         key = cv2.waitKey(1)
         if key == ord('s'): mode = "stack"
         if key == ord('o'): mode = "overlay"
-        if key == ord('q') or cv2.getWindowProperty(WINDOW_TITLE, cv2.WND_PROP_VISIBLE) < 1:
+        if key == ord('q'):
             break
 finally:
     pipe.stop()
