@@ -334,6 +334,7 @@ try:
                 results.append(((startX, startY, endX, endY), text))
 
             # loop over the results
+            output = orig.copy()
             for ((startX, startY, endX, endY), text) in results:
                 # display the text OCR'd by Tesseract
                 print("OCR TEXT")
@@ -343,7 +344,6 @@ try:
                 # using OpenCV, then draw the text and a bounding box surrounding
                 # the text region of the input image
                 text = "".join([c if ord(c) < 128 else "" for c in text]).strip()
-                output = orig.copy()
                 cv2.rectangle(output, (startX, startY), (endX, endY),
                     (0, 0, 255), 2)
                 cv2.putText(output, text, (startX, startY - 20),
