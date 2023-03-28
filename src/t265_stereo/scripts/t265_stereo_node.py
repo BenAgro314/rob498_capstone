@@ -276,7 +276,7 @@ try:
             orig = image.copy()
             origH, origW = orig.shape[:2]
 
-            newW, newH = (320, 320)
+            newW, newH = (160, 160)
             rW = origW / float(newW)
             rH = origH / float(newH)
 
@@ -312,8 +312,8 @@ try:
                 # in order to obtain a better OCR of the text we can potentially
                 # apply a bit of padding surrounding the bounding box -- here we
                 # are computing the deltas in both the x and y directions
-                dX = int((endX - startX) * 0.05)
-                dY = int((endY - startY) * 0.05)
+                dX = int((endX - startX) * 0.1)
+                dY = int((endY - startY) * 0.1)
                 # apply padding to each side of the bounding box, respectively
                 startX = max(0, startX - dX)
                 startY = max(0, startY - dY)
