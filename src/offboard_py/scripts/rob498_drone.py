@@ -19,11 +19,11 @@ import tf2_ros
 from visualization_msgs.msg import Marker
 
 USE_SLERP=False
-USE_ORIENTATION=True
+USE_ORIENTATION=False
 STABILIZE_ORIENTATION=True
 PERP=True
 BUILD_MAP=False
-JIGGLE=True
+JIGGLE=False
 
 class RobDroneControl():
 
