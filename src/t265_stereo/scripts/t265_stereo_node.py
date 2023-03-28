@@ -7,8 +7,8 @@ import numpy as np
 from math import tan, pi
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-
-import pyrealsense2 as rs
+import pdb
+import pyrealsense2.pyrealsense2 as rs
 
 
 """
@@ -181,7 +181,7 @@ try:
     (rm1, rm2) = cv2.fisheye.initUndistortRectifyMap(K_right, D_right, R_right, P_right, stereo_size, m1type)
     undistort_rectify = {"left"  : (lm1, lm2),
                          "right" : (rm1, rm2)}
-
+    pdb.set_trace()
     mode = "stack"
     while True:
         # Check if the camera has acquired any frames

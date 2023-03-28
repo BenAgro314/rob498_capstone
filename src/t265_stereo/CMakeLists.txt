@@ -9,7 +9,7 @@ project(t265_stereo)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
-  image_transpor
+  image_transport
   roscpp
   rospy
   sensor_msgs
