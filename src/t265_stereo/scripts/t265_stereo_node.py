@@ -134,6 +134,10 @@ cfg = rs.config()
 # Start streaming with our callback
 pipe.start(cfg, callback)
 
+# load the pre-trained EAST text detector
+print("[INFO] loading EAST text detector...")
+net = cv2.dnn.readNet("frozen_east_text_detection.pb")
+
 try:
     # Set up an OpenCV window to visualize the results
     WINDOW_TITLE = 'Realsense'
@@ -283,9 +287,6 @@ try:
             layerNames = [
             "feature_fusion/Conv_7/Sigmoid",
             "feature_fusion/concat_3"]
-            # load the pre-trained EAST text detector
-            print("[INFO] loading EAST text detector...")
-            net = cv2.dnn.readNet("frozen_east_text_detection.pb")
 
             # construct a blob from the image and then perform a forward pass of
             # the model to obtain the two output layer sets
