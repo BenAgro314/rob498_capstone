@@ -91,6 +91,13 @@
 /home/jetson/catkin_ws/build/optical_flow/CMakeFiles/uuid_msgs_generate_messages_py.dir
 /home/jetson/catkin_ws/build/optical_flow/CMakeFiles/roscpp_generate_messages_cpp.dir
 /home/jetson/catkin_ws/build/optical_flow/CMakeFiles/sensor_msgs_generate_messages_eus.dir
+/home/jetson/catkin_ws/build/t265_stereo/CMakeFiles/install/strip.dir
+/home/jetson/catkin_ws/build/t265_stereo/CMakeFiles/install/local.dir
+/home/jetson/catkin_ws/build/t265_stereo/CMakeFiles/install.dir
+/home/jetson/catkin_ws/build/t265_stereo/CMakeFiles/list_install_components.dir
+/home/jetson/catkin_ws/build/t265_stereo/CMakeFiles/rebuild_cache.dir
+/home/jetson/catkin_ws/build/t265_stereo/CMakeFiles/edit_cache.dir
+/home/jetson/catkin_ws/build/t265_stereo/CMakeFiles/test.dir
 /home/jetson/catkin_ws/build/VIO/CMakeFiles/install/strip.dir
 /home/jetson/catkin_ws/build/VIO/CMakeFiles/install.dir
 /home/jetson/catkin_ws/build/VIO/CMakeFiles/list_install_components.dir

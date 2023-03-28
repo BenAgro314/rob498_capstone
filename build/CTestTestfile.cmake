@@ -7,4 +7,5 @@
 subdirs("gtest")
 subdirs("offboard_py")
 subdirs("optical_flow")
+subdirs("t265_stereo")
 subdirs("VIO")

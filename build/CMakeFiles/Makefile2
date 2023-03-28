@@ -56,6 +56,7 @@ CMAKE_BINARY_DIR = /home/jetson/catkin_ws/build
 all: gtest/all
 all: offboard_py/all
 all: optical_flow/all
+all: t265_stereo/all
 all: VIO/all
 
 .PHONY : all
@@ -64,6 +65,7 @@ all: VIO/all
 preinstall: gtest/preinstall
 preinstall: offboard_py/preinstall
 preinstall: optical_flow/preinstall
+preinstall: t265_stereo/preinstall
 preinstall: VIO/preinstall
 
 .PHONY : preinstall
@@ -77,6 +79,7 @@ clean: CMakeFiles/download_extra_data.dir/clean
 clean: gtest/clean
 clean: offboard_py/clean
 clean: optical_flow/clean
+clean: t265_stereo/clean
 clean: VIO/clean
 
 .PHONY : clean
@@ -306,6 +309,24 @@ optical_flow/clean: optical_flow/CMakeFiles/roscpp_generate_messages_cpp.dir/cle
 optical_flow/clean: optical_flow/CMakeFiles/sensor_msgs_generate_messages_eus.dir/clean
 
 .PHONY : optical_flow/clean
+
+#=============================================================================
+# Directory level rules for directory t265_stereo
+
+# Recursive "all" directory target.
+t265_stereo/all:
+
+.PHONY : t265_stereo/all
+
+# Recursive "preinstall" directory target.
+t265_stereo/preinstall:
+
+.PHONY : t265_stereo/preinstall
+
+# Recursive "clean" directory target.
+t265_stereo/clean:
+
+.PHONY : t265_stereo/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/doxygen.dir

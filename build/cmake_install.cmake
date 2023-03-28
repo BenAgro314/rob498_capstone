@@ -133,6 +133,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("/home/jetson/catkin_ws/build/gtest/cmake_install.cmake")
   include("/home/jetson/catkin_ws/build/offboard_py/cmake_install.cmake")
   include("/home/jetson/catkin_ws/build/optical_flow/cmake_install.cmake")
+  include("/home/jetson/catkin_ws/build/t265_stereo/cmake_install.cmake")
   include("/home/jetson/catkin_ws/build/VIO/cmake_install.cmake")
 
 endif()

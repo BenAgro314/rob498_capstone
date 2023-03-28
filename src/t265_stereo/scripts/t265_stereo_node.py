@@ -276,7 +276,7 @@ try:
             orig = image.copy()
             origH, origW = orig.shape[:2]
 
-            newW, newH = (288, 288)
+            newW, newH = (320, 320)
             rW = origW / float(newW)
             rH = origH / float(newH)
 
@@ -327,7 +327,7 @@ try:
                 # wish to use the LSTM neural net model for OCR, and finally
                 # (3) an OEM value, in this case, 7 which implies that we are
                 # treating the ROI as a single line of text
-                config = ("-l eng --oem 1 --psm 10")
+                config = ("-l eng --oem 1 --psm 7")
                 text = pytesseract.image_to_string(roi, config=config)
                 # add the bounding box coordinates and OCR'd text to the list
                 # of results

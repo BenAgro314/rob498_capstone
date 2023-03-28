@@ -1,2 +1,2 @@
-VIO:offboard_py:optical_flow
+VIO:offboard_py:optical_flow:t265_stereo
 -DCATKIN_DEVEL_PREFIX=/home/jetson/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/jetson/catkin_ws/install -G Unix Makefiles
