@@ -306,7 +306,7 @@ class RobDroneControl():
                     x1, y1, z1 = get_config_from_pose_stamped(numpy_to_pose_stamped(t_global_dotsi))[:3]
                     t_global_dotsi = config_to_transformation_matrix(x1, y1, z1, prev_yaw)
                     new_pose = numpy_to_pose_stamped(self.t_map_global @ t_global_dotsi)
-                    self.waypoint_queue.append(pose)
+                    self.waypoint_queue.append(new_pose)
                     self.waypoint_queue_num.release() # semaphor.up
                     self.len_waypoint_queue += 1
                 else:
