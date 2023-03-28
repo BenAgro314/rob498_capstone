@@ -46,7 +46,7 @@ def decode_predictions(scores, geometry):
 		for x in range(0, numCols):
 			# if our score does not have sufficient probability,
 			# ignore it
-			if scoresData[x] < 0.95:
+			if scoresData[x] < 0.97:
 				continue
 			# compute the offset factor as our resulting feature
 			# maps will be 4x smaller than the input image
@@ -276,7 +276,7 @@ try:
             orig = image.copy()
             origH, origW = orig.shape[:2]
 
-            newW, newH = (288, 288)
+            newW, newH = (320, 320)
             rW = origW / float(newW)
             rH = origH / float(newH)
 
