@@ -3,7 +3,8 @@ from typing import List, Optional
 from offboard_py.scripts.local_planner import LocalPlanner, LocalPlannerType 
 
 #from offboard_py.scripts.path_planner import find_traj
-from offboard_py.scripts.utils import Colors, are_angles_close, config_to_transformation_matrix, get_config_from_pose_stamped, make_sphere_marker, numpy_to_transform_stamped, pose_stamped_to_transform_stamped, shortest_signed_angle, slerp_pose, transform_stamped_to_pose_stamped, transform_twist
+from offboard_py.scripts.utils import Colors, are_angles_close, config_to_transformation_matrix, get_config_from_pose, get_config_from_pose_stamped, make_sphere_marker, numpy_to_transform_stamped, pose_stamped_to_transform_stamped, shortest_signed_angle, slerp_pose, transform_stamped_to_pose_stamped, transform_twist, yaml_to_pose_array, get_current_directory
+import os
 from offboard_py.scripts.utils import pose_to_numpy, transform_stamped_to_numpy, pose_stamped_to_numpy, numpy_to_pose_stamped
 from threading import Semaphore, Lock
 import rospy
@@ -18,9 +19,11 @@ import tf2_ros
 from visualization_msgs.msg import Marker
 
 USE_SLERP=False
-SWEEP_HGT=False
 USE_ORIENTATION=False
-PERP=False
+STABILIZE_ORIENTATION=True
+PERP=True
+BUILD_MAP=False
+JIGGLE=False
 
 class RobDroneControl():
 
@@ -47,7 +50,6 @@ class RobDroneControl():
         self.on_ground_ths = 0.2
         self.launch_height = 1.6475 # check this
         self.land_height = 0.05
-        self.max_speed = 0.5 # m/s
         self.task_ball_radius = 0.15
 
         self.local_planner = LocalPlanner() 
@@ -218,12 +220,18 @@ class RobDroneControl():
             print(f"Cannot launch, not on ground, or waypoint queue is not empty: {self.len_waypoint_queue}")
             return EmptyResponse()
 
-        print(f"{Colors.GREEN}LAUNCHING{Colors.RESET}")
-        pose = deepcopy(self.current_t_map_dots)
-        pose.header.stamp = rospy.Time.now()
-        pose.pose.position.z = self.launch_height
-        self.home_pose = pose
-        self.waypoint_queue_push(pose)
+        if not BUILD_MAP:
+            print(f"{Colors.GREEN}LAUNCHING{Colors.RESET}")
+            pose = deepcopy(self.current_t_map_dots)
+            pose.header.stamp = rospy.Time.now()
+            pose.pose.position.z = self.launch_height
+            self.home_pose = pose
+            self.waypoint_queue_push(pose)
+        else:
+            pose_array = yaml_to_pose_array(os.path.join(get_current_directory(), "../config/build_map_poses.yaml"))
+            self.received_waypoints = pose_array
+            self.test_task_3()
+            self.received_waypoints = []
 
         self.publish_current_queue()
 
@@ -273,57 +281,76 @@ class RobDroneControl():
 
         self.waypoint_queue_lock.acquire()
 
-        list_t_map_dots = [pose_stamped_to_numpy(self.current_t_map_dots)]
-        for pose in self.received_waypoints.poses:
-            t_global_dotsi = pose_to_numpy(pose)
-            t_map_dotsi = self.t_map_global @ t_global_dotsi
-            list_t_map_dots.append(t_map_dotsi)
-
-        if USE_ORIENTATION:
-            prev_yaw = None
-            for t_map_dotsi, t_map_dotsip1 in zip(list_t_map_dots[:-1], list_t_map_dots[1:]):
-                pose = numpy_to_pose_stamped(t_map_dotsi, self.current_t_map_dots.header.frame_id)
-                next_pose = numpy_to_pose_stamped(t_map_dotsip1, self.current_t_map_dots.header.frame_id)
-
-                x1, y1, z1 = get_config_from_pose_stamped(pose)[:3]
-                x2, y2, z2 = get_config_from_pose_stamped(next_pose)[:3]
-                #t_global_dotsi = pose_stamped_to_numpy(pose)
-                #t_global_dotsip1 = pose_stamped_to_numpy(next_pose)
-                yaw = np.arctan2(y2 - y1, x2 - x1)
-                if PERP:
-                    yaw += np.pi/2
-                
-                if prev_yaw is not None:
-                    pose = numpy_to_pose_stamped(config_to_transformation_matrix(x1, y1, z1, prev_yaw))
-                self.waypoint_queue.append(pose)
-                self.waypoint_queue_num.release() # semaphor.up
-                self.len_waypoint_queue += 1
-
-                pose_facing_next = numpy_to_pose_stamped(config_to_transformation_matrix(x1, y1, z2, yaw))
-                self.waypoint_queue.append(pose_facing_next)
-                self.waypoint_queue_num.release() # semaphor.up
-                self.len_waypoint_queue += 1
-                prev_yaw = yaw
-        else:
-            for t_map_dotsi in list_t_map_dots:
+        if not USE_ORIENTATION:
+            for i, pose in enumerate(self.received_waypoints.poses):
+                x1, y1, z1 = get_config_from_pose(pose)[:3]
+                t_global_dotsi = config_to_transformation_matrix(x1, y1, z1, -np.pi/2) # face front wall
+                t_map_dotsi = self.t_map_global @ t_global_dotsi
                 new_pose = numpy_to_pose_stamped(t_map_dotsi, self.current_t_map_dots.header.frame_id)
-                if SWEEP_HGT:
-                    new_pose_bottom = deepcopy(new_pose)
-                    new_pose_bottom.pose.position.z -= self.task_ball_radius / 2
-                    self.waypoint_queue.append(new_pose_bottom)
-                    self.waypoint_queue_num.release() # semaphor.up
-                    self.len_waypoint_queue += 1
-
-                    new_pose_top = deepcopy(new_pose)
-                    new_pose_top.pose.position.z += self.task_ball_radius / 2
-                    self.waypoint_queue.append(new_pose_top)
-                    #self.waypoint_queue.append(new_pose)
+                self.waypoint_queue.append(new_pose)
+                self.waypoint_queue_num.release() # semaphor.up
+                self.len_waypoint_queue += 1
+                if JIGGLE:
+                    for x_off, y_off in [(0.15, 0.15), (-0.15, 0.15), (-0.15, -0.15), (0.15, -0.15)]:
+                        pose = deepcopy(new_pose)
+                        pose.pose.position.x += x_off
+                        pose.pose.position.y += y_off
+                        self.waypoint_queue.append(pose)
+                        self.waypoint_queue_num.release() # semaphor.up
+                        self.len_waypoint_queue += 1
+        else:
+            prev_yaw = None
+            pose_list = [np.linalg.inv(self.t_map_global) @ pose_stamped_to_numpy(self.current_t_map_dots)] + [pose_to_numpy(p) for p in self.received_waypoints.poses]
+            for i, t_global_dotsi in enumerate(pose_list):
+                if i == len(pose_list) - 1:
+                    x1, y1, z1 = get_config_from_pose_stamped(numpy_to_pose_stamped(t_global_dotsi))[:3]
+                    t_global_dotsi = config_to_transformation_matrix(x1, y1, z1, prev_yaw)
+                    new_pose = numpy_to_pose_stamped(self.t_map_global @ t_global_dotsi)
+                    self.waypoint_queue.append(pose)
                     self.waypoint_queue_num.release() # semaphor.up
                     self.len_waypoint_queue += 1
                 else:
+                    t_global_dotsip1 = pose_list[i+1]
+                    x1, y1, z1 = get_config_from_pose_stamped(numpy_to_pose_stamped(t_global_dotsi))[:3]
+                    x2, y2, z2 = get_config_from_pose_stamped(numpy_to_pose_stamped(t_global_dotsip1))[:3]
+                    yaw = np.arctan2(y2 - y1, x2 - x1)
+
+                    if PERP:
+                        if yaw >= np.pi/4 and yaw < 3 * np.pi/4:
+                            yaw = np.pi
+                        elif yaw >= 3 * np.pi/4 or yaw <= - 3*np.pi/4:
+                            yaw = -np.pi/2
+                        elif yaw < np.pi/4 and yaw >= -np.pi/4:
+                            yaw = -np.pi/2
+                        else:
+                            yaw = 0.0
+                    if i == 0:
+                        p1 = config_to_transformation_matrix(x1, y1, z1, yaw)
+                        p2 = config_to_transformation_matrix(x2, y2, z2, yaw)
+                    else:
+                        p1 = config_to_transformation_matrix(x1, y1, z1, yaw)
+                        p2 = config_to_transformation_matrix(x2, y2, z2, yaw)
+
+                    p1 = numpy_to_pose_stamped(self.t_map_global @ p1)
+                    self.waypoint_queue.append(p1)
+                    self.waypoint_queue_num.release() # semaphor.up
+                    self.len_waypoint_queue += 1
+
+                    new_pose = numpy_to_pose_stamped(self.t_map_global @ p2)
                     self.waypoint_queue.append(new_pose)
                     self.waypoint_queue_num.release() # semaphor.up
                     self.len_waypoint_queue += 1
+
+                    prev_yaw = yaw
+
+                if JIGGLE:
+                    for x_off, y_off in [(0.15, 0.15), (-0.15, 0.15), (-0.15, -0.15), (0.15, -0.15)]:
+                        pose = deepcopy(new_pose)
+                        pose.pose.position.x += x_off
+                        pose.pose.position.y += y_off
+                        self.waypoint_queue.append(pose)
+                        self.waypoint_queue_num.release() # semaphor.up
+                        self.len_waypoint_queue += 1
 
         self.publish_current_queue()
         self.waypoint_queue_lock.release()
@@ -360,7 +387,7 @@ class RobDroneControl():
             return Twist()
         twist_dots = self.local_planner.get_twist(self.current_t_map_dots, self.current_waypoint)
         twist_base = transform_twist(twist_dots, self.t_base_dots)
-        if not USE_ORIENTATION: # no angular velocity cmd
+        if not STABILIZE_ORIENTATION and not USE_ORIENTATION: # no angular velocity cmd
             twist_base.angular.x = 0.0
             twist_base.angular.y = 0.0
             twist_base.angular.z = 0.0

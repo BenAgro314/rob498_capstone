@@ -15,19 +15,9 @@ class ViconBridge():
 
     def vicon_update(self, transform: TransformStamped):
         odom = transform_stamped_to_odometry(transform)
-        odom.header.frame_id = "camera_odom_frame" #transform.header.frame_id
-        odom.child_frame_id = "camera_pose_frame" #transform.child_frame_id
+        odom.header.frame_id = "camera_odom_frame"
+        odom.child_frame_id = "camera_pose_frame"
         odom.header.stamp=rospy.Time.now()
-        #matrix = transform_stamped_to_numpy(transform)
-        #theta = np.pi
-        #T = np.array([
-        #    [1, 0, 0, 0],
-        #    [0, np.cos(theta), -np.sin(theta), 0],
-        #    [0, np.sin(theta), np.cos(theta), 0],
-        #    [0, 0, 0, 1],
-        #])
-        #matrix = T @ matrix
-        #pose = numpy_to_pose_stamped(matrix, frame_id = "map")
         self.mavros_vision_pose_pub.publish(odom)
 
 if __name__ == "__main__":
