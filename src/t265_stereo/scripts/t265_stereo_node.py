@@ -276,7 +276,7 @@ try:
             orig = image.copy()
             origH, origW = orig.shape[:2]
 
-            newW, newH = (160, 160)
+            newW, newH = (300, 300)
             rW = origW / float(newW)
             rH = origH / float(newH)
 
