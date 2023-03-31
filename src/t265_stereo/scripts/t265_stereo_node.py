@@ -198,7 +198,7 @@ try:
     #      \ fov /
     #        \|/
     stereo_fov_rad = 90 * (pi/180)  # 90 degree desired fov
-    stereo_height_px = 300          # 300x300 pixel stereo output
+    stereo_height_px = 480          # 300x300 pixel stereo output
     stereo_focal_px = stereo_height_px/2 / tan(stereo_fov_rad/2)
 
     # We set the left rotation to identity and the right rotation
@@ -276,7 +276,7 @@ try:
             orig = image.copy()
             origH, origW = orig.shape[:2]
 
-            newW, newH = (320, 320)
+            newW, newH = (800, 800)
             rW = origW / float(newW)
             rH = origH / float(newH)
 

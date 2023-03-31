@@ -25,7 +25,7 @@ class LocalPlanner:
         self.ki = np.diag([0.05, 0.05, 0.01, 0.0, 0.0, 0.0])
         self.kd = np.diag([0.3, 0.3, 0.1, 0.2, 0.2, 0.2])
 
-        self.v_max = np.array([1.0, 1.0, 0.5, 2, 2, 2]).T
+        self.v_max = np.array([0.4, 0.4, 0.4, 2, 2, 2]).T
 
         self.prev_time = None
 
