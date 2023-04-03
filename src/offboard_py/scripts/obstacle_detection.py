@@ -216,6 +216,8 @@ class Detector:
         self.marker_pub.publish(marker)
 
     def image_callback(self, msg: Image):
+
+        self.tf_buffer.can_transform('map', 'base_link', rospy.Time(0), timeout=rospy.Duration(5))
         t_map_base = self.tf_buffer.lookup_transform(
            "map", "base_link", rospy.Time(0)).transform
         q = t_map_base.rotation

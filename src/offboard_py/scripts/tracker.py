@@ -72,6 +72,7 @@ class Tracker:
         neg_mask = np.zeros_like(self.logits, dtype = bool)
 
         #pt_imx = np.array([pos.x, pos.y, pos.z, 1])[:, None] # (3, 1)
+        self.tf_buffer.can_transform('map', 'base_link', rospy.Time(0), timeout=rospy.Duration(5))
         t_map_base = self.tf_buffer.lookup_transform(
         "map", "base_link", rospy.Time(0)).transform
         t_base_imx = self.tf_buffer.lookup_transform(
