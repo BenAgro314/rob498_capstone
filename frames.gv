@@ -1,0 +1,22 @@
+digraph G {
+"map" -> "map_ned"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1680368000.855 sec old)\nBuffer length: 0.000 sec\n"];
+"odom" -> "odom_ned"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1680368000.855 sec old)\nBuffer length: 0.000 sec\n"];
+"base_link" -> "base_link_frd"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1680368000.855 sec old)\nBuffer length: 0.000 sec\n"];
+"map" -> "base_link"[label="Broadcaster: /pose_to_tf\nAverage rate: 8.661 Hz\nMost recent transform: 1680368000.849 ( 0.006 sec old)\nBuffer length: 4.965 sec\n"];
+"camera_link" -> "camera_fisheye1_frame"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1680368000.855 sec old)\nBuffer length: 0.000 sec\n"];
+"camera_pose_frame" -> "camera_link"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1680368000.855 sec old)\nBuffer length: 0.000 sec\n"];
+"camera_fisheye1_frame" -> "camera_fisheye1_optical_frame"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1680368000.855 sec old)\nBuffer length: 0.000 sec\n"];
+"camera_link" -> "camera_fisheye2_frame"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1680368000.855 sec old)\nBuffer length: 0.000 sec\n"];
+"camera_fisheye2_frame" -> "camera_fisheye2_optical_frame"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1680368000.855 sec old)\nBuffer length: 0.000 sec\n"];
+"base_link" -> "camera_pose_frame"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 10000.000 Hz\nMost recent transform: 1680286890.102 ( 81110.754 sec old)\nBuffer length: 0.000 sec\n"];
+"base_link" -> "imx219"[label="Broadcaster: /base_link_to_imx219\nAverage rate: 1.250 Hz\nMost recent transform: 1680368000.955 ( -0.100 sec old)\nBuffer length: 4.000 sec\n"];
+"odom" -> "camera_odom_frame"[label="Broadcaster: /play_1680367822409993750\nAverage rate: 2.000 Hz\nMost recent transform: 1680286890.126 ( 81110.730 sec old)\nBuffer length: 1.000 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1680368000.855"[ shape=plaintext ] ;
+ }->"map";
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1680368000.855"[ shape=plaintext ] ;
+ }->"odom";
+}

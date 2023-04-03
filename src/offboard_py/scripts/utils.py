@@ -4,11 +4,13 @@ from tf.transformations import quaternion_matrix, quaternion_from_matrix
 import os
 import yaml
 import tf_conversions
-from geometry_msgs.msg import PoseStamped, TransformStamped, Pose, Quaternion, Twist, PoseArray
+from geometry_msgs.msg import PoseStamped, TransformStamped, Pose, Quaternion, Twist, PoseArray, Transform
 import math
 from nav_msgs.msg import Path, Odometry
 from visualization_msgs.msg import Marker
 import tf.transformations as tf_transform
+from sensor_msgs.msg import PointCloud2, PointField
+import sensor_msgs.point_cloud2 as pc2
 
 class Colors:
     """
@@ -23,6 +25,7 @@ class Colors:
     RESET = "\033[0;0m"
     BOLD    = "\033[;1m"
     REVERSE = "\033[;7m"
+
 
 def pose_to_numpy(pose):
     # Extract position and orientation from the Pose message
@@ -42,8 +45,12 @@ def pose_to_numpy(pose):
 
 def transform_stamped_to_numpy(transform_stamped: TransformStamped):
     # Extract translation and rotation from the TransformStamped message
-    translation = transform_stamped.transform.translation
-    rotation = transform_stamped.transform.rotation
+    return transform_to_numpy(transform_stamped.transform)
+
+def transform_to_numpy(transform: Transform):
+    # Extract translation and rotation from the TransformStamped message
+    translation = transform.translation
+    rotation = transform.rotation
 
     # Convert quaternion to rotation matrix
     rotation_matrix = quaternion_matrix([rotation.x, rotation.y, rotation.z, rotation.w])
@@ -94,6 +101,28 @@ def numpy_to_pose_stamped(transformation_matrix, frame_id="parent_frame"):
     pose_stamped.pose.orientation.w = quaternion[3]
 
     return pose_stamped
+
+def numpy_to_pose(transformation_matrix):
+    # Check if the input is a 4x4 matrix
+    if transformation_matrix.shape != (4, 4):
+        raise ValueError("The input must be a 4x4 NumPy array")
+
+    # Extract position and rotation components
+    position = transformation_matrix[:3, 3]
+    quaternion = quaternion_from_matrix(transformation_matrix)
+
+    # Create a PoseStamped message
+    pose = Pose()
+
+    pose.position.x = position[0]
+    pose.position.y = position[1]
+    pose.position.z = position[2]
+
+    pose.orientation.x = quaternion[0]
+    pose.orientation.y = quaternion[1]
+    pose.orientation.z = quaternion[2]
+    pose.orientation.w = quaternion[3]
+    return pose
 
 def numpy_to_transform_stamped(transformation_matrix, frame_id="parent_frame", child_frame_id=""):
     # Check if the input is a 4x4 matrix
@@ -178,6 +207,17 @@ def pose_stamped_to_transform_stamped(pose_stamped: PoseStamped, parent_frame_id
     transform_stamped.transform.rotation.w = pose_stamped.pose.orientation.w
 
     return transform_stamped
+
+def get_config_from_transformation(t):
+    q = t.rotation
+    x = t.translation.x
+    y = t.translation.y
+    z = t.translation.z
+
+    # Convert the quaternion to Euler angles (roll, pitch, yaw)
+    roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
+
+    return np.array([x, y, z, roll, pitch, yaw])
 
 def get_config_from_pose(pose):
     q = pose.orientation
@@ -277,6 +317,23 @@ def config_to_transformation_matrix(x, y, z, yaw):
     ])
 
     return T
+
+def config_to_pose(x, y, z, yaw):
+    """
+    Creates a 4x4 transformation matrix from an (x, y, z, yaw) tuple.
+    """
+    return numpy_to_pose(config_to_transformation_matrix(x, y, z, yaw))
+
+def config_to_pose_stamped(x, y, z, yaw, frame_id):
+    """
+    Creates a 4x4 transformation matrix from an (x, y, z, yaw) tuple.
+    """
+    pose = numpy_to_pose(config_to_transformation_matrix(x, y, z, yaw))
+    pose_stamped = PoseStamped()
+    pose_stamped.pose = pose
+    pose_stamped.header.stamp = rospy.Time.now()
+    pose_stamped.header.frame_id = frame_id
+    return pose_stamped
 
 def se2_pose_list_to_path(pose_list, ref_frame):
     # convert a list of poses to a path
@@ -502,3 +559,29 @@ def get_current_directory():
     script_directory = os.path.dirname(script_path)
     
     return script_directory
+
+def numpy_to_pointcloud2(points, frame_id='base_link'):
+    fields = [
+        PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
+        PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
+        PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1)
+    ]
+
+    header = rospy.Header()
+    header.stamp = rospy.Time.now()
+    header.frame_id = frame_id
+
+    return pc2.create_cloud(header, fields, points)
+
+def pointcloud2_to_numpy(pointcloud):
+    """
+    Convert a PointCloud2 message to a NumPy array of points.
+    
+    Parameters:
+    - pointcloud: A sensor_msgs.PointCloud2 message
+    
+    Returns:
+    - points: A NumPy array of shape (N, 3) containing the points
+    """
+    points = np.array(list(pc2.read_points(pointcloud, field_names=('x', 'y', 'z'))))
+    return points

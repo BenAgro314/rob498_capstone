@@ -31,8 +31,18 @@
 
 	<!-- Our node to control the drone -->
 	<node pkg="offboard_py" type="rob498_drone.py" name="rob498_drone_py" required="true" output="screen" />
-	<node pkg="offboard_py" type="imx219_publish.py" name="imx219_publish" required="true" output="screen" />
+	<node pkg="offboard_py" type="imx219_publish.py" name="imx219_publish_py" required="true" output="screen" />
 
     <!-- rviz -->
     <!-- node type="rviz" name="rviz" pkg="rviz" args="-d $(find offboard_py)/rviz/offboard.rviz" / -->
+
+	<!-- ct4 stuff -->
+	<node name="pose_to_tf" pkg="offboard_py" type="tf_pub.py" output="screen"/>
+	<node name="obstacle_detector" pkg="offboard_py" type="obstacle_detection.py" output="screen"/>
+
+	<!-- Publish a static transformation between base_link and camera_odom_frame -->
+	<node pkg="tf" type="static_transform_publisher" name="base_link_to_imx219"
+			args="0 0 0 0 -1.5707 1.5707 base_link imx219 1000"/>
+
+	<node name="tracker" pkg="offboard_py" type="tracker.py" output="screen"/>
 </launch>

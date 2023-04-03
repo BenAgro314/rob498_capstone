@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 from typing import List, Optional
-from offboard_py.scripts.local_planner import LocalPlanner, LocalPlannerType 
+from offboard_py.scripts.controller import Controller
+from offboard_py.scripts.local_planner import LocalPlanner
 
 #from offboard_py.scripts.path_planner import find_traj
-from offboard_py.scripts.utils import Colors, are_angles_close, config_to_transformation_matrix, get_config_from_pose, get_config_from_pose_stamped, make_sphere_marker, numpy_to_transform_stamped, pose_stamped_to_transform_stamped, shortest_signed_angle, slerp_pose, transform_stamped_to_pose_stamped, transform_twist, yaml_to_pose_array, get_current_directory
+from offboard_py.scripts.utils import Colors, are_angles_close, config_to_pose_stamped, config_to_transformation_matrix, get_config_from_pose, get_config_from_pose_stamped, make_sphere_marker, numpy_to_transform_stamped, pose_stamped_to_transform_stamped, shortest_signed_angle, slerp_pose, transform_stamped_to_pose_stamped, transform_twist, yaml_to_pose_array, get_current_directory
 import os
 from offboard_py.scripts.utils import pose_to_numpy, transform_stamped_to_numpy, pose_stamped_to_numpy, numpy_to_pose_stamped
 from threading import Semaphore, Lock
@@ -19,7 +20,7 @@ import tf2_ros
 from visualization_msgs.msg import Marker
 
 USE_SLERP=False
-USE_ORIENTATION=False
+USE_ORIENTATION=True
 STABILIZE_ORIENTATION=True
 PERP=True
 BUILD_MAP=False
@@ -45,14 +46,15 @@ class RobDroneControl():
         self.received_waypoints: Optional[PoseArray] = None # PoseArray
 
         # TODO: make these arguments / config files
-        self.waypoint_trans_ths = 0.04 # used in pose_is_close
+        self.waypoint_trans_ths = 0.08 # 0.08 # used in pose_is_close
         self.waypoint_yaw_ths = np.deg2rad(10.0) # used in pose_is_close
         self.on_ground_ths = 0.2
         self.launch_height = 1.6475 # check this
         self.land_height = 0.05
         self.task_ball_radius = 0.15
 
-        self.local_planner = LocalPlanner() 
+        self.controller = Controller() 
+        self.local_planner = LocalPlanner()
 
         self.state_sub = rospy.Subscriber("mavros/state", State, callback = self.state_cb)
         #self.setpoint_position_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
@@ -84,6 +86,7 @@ class RobDroneControl():
         self.waypoint_queue_lock = Lock()
         self.current_pose_lock = Lock()
         self.len_waypoint_queue = 0
+        self.local_path = None
 
         self.marker_pub = rospy.Publisher('sphere_marker', Marker, queue_size=10)
         self.t_dots_base = np.array(
@@ -95,6 +98,10 @@ class RobDroneControl():
             ]
         )
         #self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_dots_base, frame_id='dots_link', child_frame_id='base_link'))
+
+        self.nearest_obstacle = None
+        #self.image_sub= rospy.Subscriber("/cylinder_marker", Marker, callback = self.obs_callback)
+
         self.t_base_dots = np.linalg.inv(self.t_dots_base)
 
     def publish_sphere_marker(self, x: float, y: float, z:float, r: float):
@@ -228,10 +235,14 @@ class RobDroneControl():
             self.home_pose = pose
             self.waypoint_queue_push(pose)
         else:
-            pose_array = yaml_to_pose_array(os.path.join(get_current_directory(), "../config/build_map_poses.yaml"))
-            self.received_waypoints = pose_array
-            self.test_task_3()
-            self.received_waypoints = []
+            x, y, _, _, _, yaw = get_config_from_pose_stamped(self.current_t_map_dots)
+
+            for angle in np.linspace(yaw, yaw + 2*np.pi, 30):
+                self.waypoint_queue_push(config_to_pose_stamped(x, y, self.launch_height, angle, self.current_t_map_dots.header.frame_id))
+            #pose_array = yaml_to_pose_array(os.path.join(get_current_directory(), "../config/build_map_poses.yaml"))
+            #self.received_waypoints = pose_array
+            #self.test_task_3()
+            #self.received_waypoints = []
 
         self.publish_current_queue()
 
@@ -316,14 +327,8 @@ class RobDroneControl():
                     yaw = np.arctan2(y2 - y1, x2 - x1)
 
                     if PERP:
-                        if yaw >= np.pi/4 and yaw < 3 * np.pi/4:
-                            yaw = np.pi
-                        elif yaw >= 3 * np.pi/4 or yaw <= - 3*np.pi/4:
-                            yaw = -np.pi/2
-                        elif yaw < np.pi/4 and yaw >= -np.pi/4:
-                            yaw = -np.pi/2
-                        else:
-                            yaw = 0.0
+                        yaw += np.pi/2
+
                     if i == 0:
                         p1 = config_to_transformation_matrix(x1, y1, z1, yaw)
                         p2 = config_to_transformation_matrix(x2, y2, z2, yaw)
@@ -385,13 +390,18 @@ class RobDroneControl():
     def compute_twist_command(self):
         if self.current_waypoint is None:
             return Twist()
-        twist_dots = self.local_planner.get_twist(self.current_t_map_dots, self.current_waypoint)
+        #if self.local_path is None or self.pose_is_close(self.local_path.poses[1], self.current_t_map_dots):
+        #self.local_path = self.local_planner.get_plan(self.current_t_map_dots, self.current_waypoint)
+        #curr_goal = self.local_path.poses[1] # first pose on the list
+        curr_goal = self.current_waypoint
+        twist_dots = self.controller.get_twist(self.current_t_map_dots, curr_goal)
         twist_base = transform_twist(twist_dots, self.t_base_dots)
         if not STABILIZE_ORIENTATION and not USE_ORIENTATION: # no angular velocity cmd
             twist_base.angular.x = 0.0
             twist_base.angular.y = 0.0
             twist_base.angular.z = 0.0
         return twist_base
+
 
     def run(self):
         rate = rospy.Rate(20)
