@@ -47,7 +47,7 @@ class RobDroneControl():
         self.received_waypoints: Optional[PoseArray] = None # PoseArray
 
         # TODO: make these arguments / config files
-        self.waypoint_trans_ths = 0.08 # 0.08 # used in pose_is_close
+        self.waypoint_trans_ths = 0.04 # 0.08 # used in pose_is_close
         self.waypoint_yaw_ths = np.deg2rad(10.0) # used in pose_is_close
         self.on_ground_ths = 0.2
         self.launch_height = 1.6475 # check this

@@ -115,8 +115,8 @@ class Tracker:
                 angle_left = np.arctan2(pt_map_left[1] - y_base, pt_map_left[0] - x_base)
                 angle_right = np.arctan2(pt_map_right[1] - y_base, pt_map_right[0] - x_base)
 
-                left_fov_pt = x_base + self.range * np.cos(angle_left), y_base + self.range * np.sin(angle_left), 0
-                right_fov_pt = x_base + self.range * np.cos(angle_right), y_base + self.range * np.sin(angle_right), 0
+                left_fov_pt = (x_base + self.range * np.cos(angle_left))[0], (y_base + self.range * np.sin(angle_left))[0], 0
+                right_fov_pt = (x_base + self.range * np.cos(angle_right))[0], (y_base + self.range * np.sin(angle_right))[0], 0
 
                 left_fov_ind = self.point_to_ind(np.array(left_fov_pt)[:, None])
                 right_fov_ind = self.point_to_ind(np.array(right_fov_pt)[:, None])
