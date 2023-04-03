@@ -20,11 +20,12 @@ import tf2_ros
 from visualization_msgs.msg import Marker
 
 USE_SLERP=False
-USE_ORIENTATION=True
+USE_ORIENTATION=False
 STABILIZE_ORIENTATION=True
 PERP=True
 BUILD_MAP=False
 JIGGLE=False
+WAIT_DUR=1
 
 class RobDroneControl():
 
@@ -80,6 +81,7 @@ class RobDroneControl():
 
         self.waypoint_queue = []
         self.current_waypoint = None 
+        self.current_duration = rospy.Duration(0)
         self.active = False
 
         self.waypoint_queue_num = Semaphore(0)
@@ -103,6 +105,9 @@ class RobDroneControl():
         #self.image_sub= rospy.Subscriber("/cylinder_marker", Marker, callback = self.obs_callback)
 
         self.t_base_dots = np.linalg.inv(self.t_dots_base)
+
+        # timing 
+        self.arrived_time = None
 
     def publish_sphere_marker(self, x: float, y: float, z:float, r: float):
         marker = make_sphere_marker(x, y, z, r)
@@ -160,14 +165,17 @@ class RobDroneControl():
                     self.t_map_global = pose_stamped_to_numpy(self.current_t_map_dots) @ np.linalg.inv(t_global_dots)
         #self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_map_global, frame_id='map', child_frame_id='global'))
 
-    def waypoint_queue_push(self, pose: PoseStamped):
-        self.waypoint_queue_lock.acquire()
-
-        self.waypoint_queue.append(pose)
-
-        self.len_waypoint_queue += 1
-        self.waypoint_queue_lock.release()
+    def waypoint_queue_push_no_lock(self, pose: PoseStamped, duration = None):
+        if duration is None:
+            duration = rospy.Duration(0)
+        self.waypoint_queue.append((pose, duration))
         self.waypoint_queue_num.release()
+        self.len_waypoint_queue += 1
+
+    def waypoint_queue_push(self, pose: PoseStamped, duration = None):
+        self.waypoint_queue_lock.acquire()
+        self.waypoint_queue_push_no_lock(pose, duration)
+        self.waypoint_queue_lock.release()
 
     def waypoint_queue_pop(self):
         self.waypoint_queue_num.acquire() # semaphor.down
@@ -193,7 +201,7 @@ class RobDroneControl():
     def publish_current_queue(self):
         msg = Path()
         msg.header.frame_id = self.current_t_map_dots.header.frame_id
-        msg.poses = [self.current_t_map_dots] + self.waypoint_queue
+        msg.poses = [self.current_t_map_dots] + [w[0] for w in self.waypoint_queue]
         self.current_path_pub.publish(msg)
 
     def home_cb(self, request: Empty):
@@ -208,9 +216,7 @@ class RobDroneControl():
             self.len_waypoint_queue -= 1
         # add home waypoint
         self.home_pose.header.stamp = rospy.Time.now()
-        self.waypoint_queue.append(self.home_pose)
-        self.waypoint_queue_num.release()
-        self.len_waypoint_queue += 1
+        self.waypoint_queue_push_no_lock(self.home_pose)
         # clear received waypoints for re-test
         self.received_waypoints = None
         self.publish_current_queue()
@@ -298,17 +304,13 @@ class RobDroneControl():
                 t_global_dotsi = config_to_transformation_matrix(x1, y1, z1, -np.pi/2) # face front wall
                 t_map_dotsi = self.t_map_global @ t_global_dotsi
                 new_pose = numpy_to_pose_stamped(t_map_dotsi, self.current_t_map_dots.header.frame_id)
-                self.waypoint_queue.append(new_pose)
-                self.waypoint_queue_num.release() # semaphor.up
-                self.len_waypoint_queue += 1
+                self.waypoint_queue_push_no_lock(new_pose, rospy.Duration(WAIT_DUR))
                 if JIGGLE:
                     for x_off, y_off in [(0.15, 0.15), (-0.15, 0.15), (-0.15, -0.15), (0.15, -0.15)]:
                         pose = deepcopy(new_pose)
                         pose.pose.position.x += x_off
                         pose.pose.position.y += y_off
-                        self.waypoint_queue.append(pose)
-                        self.waypoint_queue_num.release() # semaphor.up
-                        self.len_waypoint_queue += 1
+                        self.waypoint_queue_push_no_lock(pose)
         else:
             prev_yaw = None
             pose_list = [np.linalg.inv(self.t_map_global) @ pose_stamped_to_numpy(self.current_t_map_dots)] + [pose_to_numpy(p) for p in self.received_waypoints.poses]
@@ -317,9 +319,7 @@ class RobDroneControl():
                     x1, y1, z1 = get_config_from_pose_stamped(numpy_to_pose_stamped(t_global_dotsi))[:3]
                     t_global_dotsi = config_to_transformation_matrix(x1, y1, z1, prev_yaw)
                     new_pose = numpy_to_pose_stamped(self.t_map_global @ t_global_dotsi)
-                    self.waypoint_queue.append(new_pose)
-                    self.waypoint_queue_num.release() # semaphor.up
-                    self.len_waypoint_queue += 1
+                    self.waypoint_queue_push_no_lock(new_pose, rospy.Duration(WAIT_DUR))
                 else:
                     t_global_dotsip1 = pose_list[i+1]
                     x1, y1, z1 = get_config_from_pose_stamped(numpy_to_pose_stamped(t_global_dotsi))[:3]
@@ -337,14 +337,10 @@ class RobDroneControl():
                         p2 = config_to_transformation_matrix(x2, y2, z2, yaw)
 
                     p1 = numpy_to_pose_stamped(self.t_map_global @ p1)
-                    self.waypoint_queue.append(p1)
-                    self.waypoint_queue_num.release() # semaphor.up
-                    self.len_waypoint_queue += 1
+                    self.waypoint_queue_push_no_lock(p1)
 
                     new_pose = numpy_to_pose_stamped(self.t_map_global @ p2)
-                    self.waypoint_queue.append(new_pose)
-                    self.waypoint_queue_num.release() # semaphor.up
-                    self.len_waypoint_queue += 1
+                    self.waypoint_queue_push_no_lock(new_pose, rospy.Duration(WAIT_DUR))
 
                     prev_yaw = yaw
 
@@ -353,9 +349,7 @@ class RobDroneControl():
                         pose = deepcopy(new_pose)
                         pose.pose.position.x += x_off
                         pose.pose.position.y += y_off
-                        self.waypoint_queue.append(pose)
-                        self.waypoint_queue_num.release() # semaphor.up
-                        self.len_waypoint_queue += 1
+                        self.waypoint_queue_push_no_lock(pose)
 
         self.publish_current_queue()
         self.waypoint_queue_lock.release()
@@ -381,11 +375,14 @@ class RobDroneControl():
         cfg1 = get_config_from_pose_stamped(pose1)
         cfg2 = get_config_from_pose_stamped(pose2)
         trans_is_close =  np.linalg.norm(cfg1[:3] - cfg2[:3]) < self.waypoint_trans_ths
+
         if USE_ORIENTATION:
             yaw_is_close = are_angles_close(cfg1[-1], cfg2[-1], self.waypoint_yaw_ths)
             return trans_is_close and yaw_is_close
         else:
-            return trans_is_close
+            if trans_is_close and self.arrived_time is None:
+                self.arrived_time = rospy.Time.now()
+            return trans_is_close and rospy.Time.now() >= self.arrived_time + self.current_duration
 
     def compute_twist_command(self):
         if self.current_waypoint is None:
@@ -418,7 +415,8 @@ class RobDroneControl():
             if self.current_waypoint is None or self.pose_is_close(self.current_waypoint, self.current_t_map_dots):
                 #self.queue_lock.acquire()
                 if self.len_waypoint_queue > 0:
-                    self.current_waypoint = self.waypoint_queue_pop()
+                    self.current_waypoint, self.current_duration = self.waypoint_queue_pop()
+                    self.arrived_time = None
                     cfg = get_config_from_pose_stamped(self.current_waypoint)
                     self.publish_sphere_marker(cfg[0], cfg[1], cfg[2], self.waypoint_trans_ths)
                 #self.queue_lock.release()
