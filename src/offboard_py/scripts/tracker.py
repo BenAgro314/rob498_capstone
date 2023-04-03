@@ -14,24 +14,6 @@ from cv_bridge import CvBridge
 from visualization_msgs.msg import Marker
 from skimage.draw import disk, polygon
 
-
-def cluster_points(points, eps=0.5, min_samples=5):
-    """
-    Cluster points using the DBSCAN algorithm.
-    
-    Parameters:
-    - points: NumPy array of shape (N, 3) containing the points to cluster.
-    - eps: The maximum distance between two samples for them to be considered as in the same neighborhood (default: 0.5).
-    - min_samples: The number of samples in a neighborhood for a point to be considered as a core point (default: 5).
-    
-    Returns:
-    - labels: NumPy array of shape (N,) containing the cluster labels for each point.
-    """
-    clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(points)
-    labels = clustering.labels_
-
-    return labels
-
 class Tracker:
 
     def __init__(self):
