@@ -12,7 +12,6 @@ import numpy as np
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from visualization_msgs.msg import Marker
-from sklearn.cluster import DBSCAN
 from skimage.draw import disk, polygon
 
 
