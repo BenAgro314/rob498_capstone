@@ -41,7 +41,7 @@ def publish_images():
         image_pub.publish(image_msg)
 
         # Sleep to control the capture rate
-        rospy.sleep(rate)
+        rate.sleep()
 
 if __name__ == '__main__':
     try:
