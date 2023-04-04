@@ -20,7 +20,7 @@ class Tracker:
         self.points = None
         self.cyl_sub= rospy.Subscriber("det_points", PointCloud2, callback = self.cyl_callback)
 
-        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_buffer = tf2_ros.Buffer(cache_time=rospy.Duration(60.0))
         tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.occ_map_pub = rospy.Publisher('occ_map', OccupancyGrid, queue_size=10)
 
