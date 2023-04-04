@@ -227,7 +227,7 @@ class Detector:
         image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
         image = undistort_image(image, self.K, self.D)
         image = rotate_image(image, np.rad2deg(pitch))
-        scale = 1.0
+        scale = 0.5
         image = scale_image(image, scale)
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         #hsv_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
