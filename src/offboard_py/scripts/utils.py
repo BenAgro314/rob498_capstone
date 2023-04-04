@@ -560,7 +560,7 @@ def get_current_directory():
     
     return script_directory
 
-def numpy_to_pointcloud2(points, frame_id='base_link'):
+def numpy_to_pointcloud2(points, frame_id='base_link', time = None):
     fields = [
         PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
         PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
@@ -568,7 +568,7 @@ def numpy_to_pointcloud2(points, frame_id='base_link'):
     ]
 
     header = rospy.Header()
-    header.stamp = rospy.Time.now()
+    header.stamp = rospy.Time.now() if time is None else time
     header.frame_id = frame_id
 
     return pc2.create_cloud(header, fields, points)

@@ -92,6 +92,7 @@ class LocalPlanner:
         self.map_lock = Lock()
         self.path_pub = rospy.Publisher('local_plan', Path, queue_size=10)
         self.vehicle_radius = 0.6
+        self.prev_path = None
         pass
 
     def point_to_ind(self, pt):
@@ -177,11 +178,22 @@ class LocalPlanner:
                 return Path()
             occ_map = self.map.copy()
 
+            
+
         x1,y1 = get_config_from_pose_stamped(t_map_d)[:2]
         x2,y2,z2, _, _, yaw = get_config_from_pose_stamped(t_map_d_goal)
 
         r1, c1 = self.point_to_ind(np.array([x1, y1, 0])[:, None])
         r2, c2 = self.point_to_ind(np.array([x2, y2, 0])[:, None])
+
+        if self.prev_path is not None:
+            no_col = True
+            for p1, p2 in zip(self.prev_path[:-1], self.prev_path[1:]):
+                no_col = no_col and coll_free(np.array(p1), np.array(p2))
+            if self.prev_path[-1] == (r2, c2) and no_col:
+                if (r1, c1) == self.prev_path[1]:
+                    self.prev_path.pop(0)
+                return self.prev_path
 
 
         def collision_fn(pt):
@@ -223,6 +235,7 @@ class LocalPlanner:
                 i = j
             print(f"Astar time: {dt}")
 
+        self.prev_path = shorter_path
         path_msg = self.path_to_path_message(shorter_path, z2, yaw, frame_id='map')
         path_msg.poses[-1] = t_map_d_goal # correct for map resolution
 

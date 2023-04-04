@@ -217,9 +217,10 @@ class Detector:
 
     def image_callback(self, msg: Image):
 
-        self.tf_buffer.can_transform('map', 'base_link', rospy.Time(0), timeout=rospy.Duration(5))
+        image_time = msg.header.stamp
+        self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
         t_map_base = self.tf_buffer.lookup_transform(
-           "map", "base_link", rospy.Time(0)).transform
+           "map", "base_link", image_time).transform
         q = t_map_base.rotation
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
@@ -316,7 +317,7 @@ class Detector:
                             cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
         det_points = np.stack(det_points, axis = 0) if len(det_points) > 0 else np.array([])
-        pc = numpy_to_pointcloud2(det_points, frame_id='map')
+        pc = numpy_to_pointcloud2(det_points, frame_id='map', time=image_time)
         self.det_point_pub.publish(pc)
 
         self.prev_rects = []
