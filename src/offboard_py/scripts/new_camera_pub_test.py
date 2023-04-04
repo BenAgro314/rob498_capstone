@@ -20,8 +20,11 @@ def publish_images():
     capture_width = 640
     capture_height = 480
 
+    fps = 30
     # Initialize the CSICamera from the jetcam package
-    camera = CSICamera(width=capture_width, height=capture_height)
+    camera = CSICamera(width=capture_width, height=capture_height, capture_fps=fps)
+    rate = rospy.Rate(fps)
+
 
     # Capture images continuously
     while not rospy.is_shutdown():
@@ -38,7 +41,7 @@ def publish_images():
         image_pub.publish(image_msg)
 
         # Sleep to control the capture rate
-        rospy.sleep(0.1)
+        rospy.sleep(rate)
 
 if __name__ == '__main__':
     try:
