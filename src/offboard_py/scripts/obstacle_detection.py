@@ -233,10 +233,11 @@ class Detector:
         image_time = msg.header.stamp
         try:
             self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
+            t_map_base = self.tf_buffer.lookup_transform(
+            "map", "base_link", image_time).transform
         except Exception as e:
+            print("Detector is missing transform map->base")
             return
-        t_map_base = self.tf_buffer.lookup_transform(
-           "map", "base_link", image_time).transform
         q = t_map_base.rotation
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
