@@ -130,10 +130,19 @@ def reproject_2D_to_3D(bbox, actual_height, K):
 class Detector:
 
     def __init__(self):
-        self.K = np.array([[1581.5, 0, 1034.7], # needs to be tuned
-                                    [0, 1588.7, 557.16],
-                                    [0, 0, 1]])
-        self.D = np.array([[-0.37906155, 0.2780121, -0.00092033, 0.00087556, -0.21837157]])
+        #self.K = np.array([[1581.5, 0, 1034.7], # needs to be tuned
+        #                            [0, 1588.7, 557.16],
+        #                            [0, 0, 1]])
+        #self.D = np.array([[-0.37906155, 0.2780121, -0.00092033, 0.00087556, -0.21837157]])
+        self.K = np.array(
+            [
+                [342.6836426,    0.,         313.55097801],
+                [  0., 607.63147143, 297.50936008],
+                [  0.,           0.,           1.        ]
+            ]
+        )
+        #D = np.array([[-0.37906155, 0.2780121, -0.00092033, 0.00087556, -0.21837157]])
+        self.D = np.array([[-3.97718724e-01, 3.27660950e-02, -5.45843945e-04, -8.40769238e-03, 9.20723812e-01]])
         self.image_sub= rospy.Subscriber("imx219_image", Image, callback = self.image_callback)
         #self.pose_sub = rospy.Subscriber("imx219_image", Image, callback = self.image_callback)
         self.seg_image_pub= rospy.Publisher("imx219_seg", Image, queue_size=10)
@@ -142,7 +151,7 @@ class Detector:
 
         self.det_point_pub = rospy.Publisher("det_points", PointCloud2, queue_size=10)
 
-        self.tf_buffer = tf2_ros.Buffer(cache_time=rospy.Duration(60.0))
+        self.tf_buffer = tf2_ros.Buffer()
         tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # Define the source and target frames
@@ -217,17 +226,16 @@ class Detector:
 
     def image_callback(self, msg: Image):
 
-        image_time = msg.header.stamp #rospy.Time(0)
-        self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
+        self.tf_buffer.can_transform('map', 'base_link', rospy.Time(0), timeout=rospy.Duration(5))
         t_map_base = self.tf_buffer.lookup_transform(
-           "map", "base_link", image_time).transform
+           "map", "base_link", rospy.Time(0)).transform
         q = t_map_base.rotation
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
-        image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
+        image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         image = undistort_image(image, self.K, self.D)
         image = rotate_image(image, np.rad2deg(pitch))
-        scale = 0.5
+        scale = 1.0
         image = scale_image(image, scale)
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         #hsv_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -260,7 +268,7 @@ class Detector:
         # Find contours in the binary mask
         yellow_contours, _ = cv2.findContours(yellow_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        min_area = 30000 * scale
+        min_area = 1000 * scale
         det_points = []
         for contour in yellow_contours:
             area = cv2.contourArea(contour)
@@ -317,7 +325,7 @@ class Detector:
                             cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
         det_points = np.stack(det_points, axis = 0) if len(det_points) > 0 else np.array([])
-        pc = numpy_to_pointcloud2(det_points, frame_id='map', time=image_time)
+        pc = numpy_to_pointcloud2(det_points, frame_id='map')
         self.det_point_pub.publish(pc)
 
         self.prev_rects = []
