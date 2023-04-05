@@ -2,7 +2,6 @@
 
 from offboard_py.scripts.utils import numpy_to_pointcloud2, quaternion_to_euler
 import rospy
-import time
 import cv2
 import tf2_ros
 import matplotlib.pyplot as plt
@@ -135,7 +134,6 @@ def reproject_2D_to_3D(bbox, actual_height, K):
 class Detector:
 
     def __init__(self):
-        time.sleep(5)
         #self.K = np.array([[1581.5, 0, 1034.7], # needs to be tuned
         #                            [0, 1588.7, 557.16],
         #                            [0, 0, 1]])
@@ -235,13 +233,12 @@ class Detector:
         image_time = msg.header.stamp
         #image_time = rospy.Time(0)
         if not  self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5)):
-            print("Detector can't find transform")
-            print(f"Image time: {image_time.to_sec()}")
-            print(f"dt: {image_time.to_sec() - rospy.Time.now().to_sec()}")
+            print("Obstacle detector not up yet")
             return
         t_map_base = self.tf_buffer.lookup_transform(
         "map", "base_link", image_time).transform
         q = t_map_base.rotation
+                q = t_map_base.rotation
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
         image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -257,7 +254,7 @@ class Detector:
         hsv_image[:, :, 1] = sat
 
         # Define the lower and upper bounds for the color yellow in the HSV color space
-        lower_yellow = (3, 100, 0)
+        lower_yellow = (10, 240, 0)
         upper_yellow = (80, 255, 255)
         
         lower_red = (0, 0, 0)
@@ -273,14 +270,14 @@ class Detector:
         green_mask = get_mask_from_range(hsv_image, lower_green, upper_green)
         
 
-        #yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
+        yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
         #red_segment = cv2.bitwise_and(image, image, mask=red_mask)
         #green_segment = cv2.bitwise_and(image, image, mask=green_mask)
 
         # Find contours in the binary mask
         yellow_contours, _ = cv2.findContours(yellow_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        min_area = 1000 * scale
+        min_area = 500 * scale
         det_points = []
         for contour in yellow_contours:
             area = cv2.contourArea(contour)
@@ -317,7 +314,7 @@ class Detector:
                         continue
 
                     if y > image.shape[0]//8 and (y + h) < 7 * image.shape[0]//8:
-                        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        #cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
                         bbox = [x/scale, y/scale, (x+w)/scale, (y+h)/scale] # x_min, y_min, x_max, y_max
                         p_box_cam =  reproject_2D_to_3D(bbox, 0.3, self.K)
                         det_points.append(np.array(p_box_cam))
@@ -330,11 +327,11 @@ class Detector:
                         percent_green = np.sum(green_mask[y:y+h, x:x+w])/(255 * w * h)
                         percent_red = np.sum(red_mask[y:y+h, x:x+w])/(255 * w * h)
                         if percent_green > 0.03:
-                            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                            cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (0, 255, 0), 2)
                         elif percent_red > 0.03:
-                            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                            cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (0, 0, 255), 2)
                         else:
-                            cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                            cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
         det_points = np.stack(det_points, axis = 0) if len(det_points) > 0 else np.array([])
         pc = numpy_to_pointcloud2(det_points, frame_id='map')
@@ -351,7 +348,8 @@ class Detector:
                     self.prev_rects.append((x, y, w, h))
 
         #msg = self.bridge.cv2_to_imgmsg(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        msg = self.bridge.cv2_to_imgmsg(image)
+        #msg = self.bridge.cv2_to_imgmsg(image)
+        msg = self.bridge.cv2_to_imgmsg(yellow_segment)
         msg.header.stamp = rospy.Time.now()
         self.seg_image_pub.publish(msg)
 
