@@ -231,7 +231,7 @@ class Detector:
     def image_callback(self, msg: Image):
 
         image_time = msg.header.stamp
-        self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
+        self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(10))
         t_map_base = self.tf_buffer.lookup_transform(
            "map", "base_link", image_time).transform
         q = t_map_base.rotation
