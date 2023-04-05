@@ -24,8 +24,8 @@ class Tracker:
         tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.occ_map_pub = rospy.Publisher('occ_map', OccupancyGrid, queue_size=10)
 
-        self.map_bounds = [-5, -5, 5, 5] # min_x, min_y, max_x, max_y
-        self.map_res = 0.1
+        self.map_bounds = [-4.5, -4.5, 4.5, 4.5] # min_x, min_y, max_x, max_y
+        self.map_res = 0.15
 
         self.map_shape = (
                 int((self.map_bounds[3] - self.map_bounds[1]) // self.map_res),
