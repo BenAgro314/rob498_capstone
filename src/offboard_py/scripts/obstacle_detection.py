@@ -154,7 +154,7 @@ class Detector:
 
         self.det_point_pub = rospy.Publisher("det_points", PointCloud2, queue_size=10)
 
-        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_buffer = tf2_ros.Buffer(cache_time=rospy.Duration(60.0))
         tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # Define the source and target frames
@@ -231,10 +231,13 @@ class Detector:
     def image_callback(self, msg: Image):
 
         image_time = msg.header.stamp
-        image_time = rospy.Time(0)
-        self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
-        t_map_base = self.tf_buffer.lookup_transform(
-        "map", "base_link", image_time).transform
+        #image_time = rospy.Time(0)
+        try:
+            self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
+            t_map_base = self.tf_buffer.lookup_transform(
+            "map", "base_link", image_time).transform
+        except Exception as e:
+            print(e)
         q = t_map_base.rotation
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
@@ -251,7 +254,7 @@ class Detector:
         hsv_image[:, :, 1] = sat
 
         # Define the lower and upper bounds for the color yellow in the HSV color space
-        lower_yellow = (3, 240, 0)
+        lower_yellow = (3, 100, 0)
         upper_yellow = (80, 255, 255)
         
         lower_red = (0, 0, 0)
@@ -267,7 +270,7 @@ class Detector:
         green_mask = get_mask_from_range(hsv_image, lower_green, upper_green)
         
 
-        yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
+        #yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
         #red_segment = cv2.bitwise_and(image, image, mask=red_mask)
         #green_segment = cv2.bitwise_and(image, image, mask=green_mask)
 
@@ -345,7 +348,7 @@ class Detector:
                     self.prev_rects.append((x, y, w, h))
 
         #msg = self.bridge.cv2_to_imgmsg(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        msg = self.bridge.cv2_to_imgmsg(yellow_segment)
+        msg = self.bridge.cv2_to_imgmsg(image)
         msg.header.stamp = rospy.Time.now()
         self.seg_image_pub.publish(msg)
 
