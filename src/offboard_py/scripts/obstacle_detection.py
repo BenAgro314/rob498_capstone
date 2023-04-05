@@ -2,6 +2,7 @@
 
 from offboard_py.scripts.utils import numpy_to_pointcloud2, quaternion_to_euler
 import rospy
+import time
 import cv2
 import tf2_ros
 import matplotlib.pyplot as plt
@@ -134,6 +135,7 @@ def reproject_2D_to_3D(bbox, actual_height, K):
 class Detector:
 
     def __init__(self):
+        time.sleep(5)
         #self.K = np.array([[1581.5, 0, 1034.7], # needs to be tuned
         #                            [0, 1588.7, 557.16],
         #                            [0, 0, 1]])
@@ -233,6 +235,9 @@ class Detector:
         image_time = msg.header.stamp
         #image_time = rospy.Time(0)
         if not  self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5)):
+            print("Detector can't find transform")
+            print(f"Image time: {image_time.to_sec()}")
+            print(f"dt: {image_time.to_sec() - rospy.Time.now().to_sec()}")
             return
         t_map_base = self.tf_buffer.lookup_transform(
         "map", "base_link", image_time).transform
