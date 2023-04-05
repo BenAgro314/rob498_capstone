@@ -20,7 +20,7 @@ def publish_images():
     capture_width = 540
     capture_height = 540
 
-    fps = 10
+    fps = 5
     # Initialize the CSICamera from the jetcam package
     camera = CSICamera(width=capture_width, height=capture_height, capture_fps=fps)
     rate = rospy.Rate(fps)
