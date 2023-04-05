@@ -233,7 +233,6 @@ class Detector:
         image_time = msg.header.stamp
         image_time = rospy.Time(0)
         self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
-        print(self.tf_buffer)
         t_map_base = self.tf_buffer.lookup_transform(
         "map", "base_link", image_time).transform
         q = t_map_base.rotation
@@ -268,7 +267,7 @@ class Detector:
         green_mask = get_mask_from_range(hsv_image, lower_green, upper_green)
         
 
-        #yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
+        yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
         #red_segment = cv2.bitwise_and(image, image, mask=red_mask)
         #green_segment = cv2.bitwise_and(image, image, mask=green_mask)
 
@@ -346,7 +345,7 @@ class Detector:
                     self.prev_rects.append((x, y, w, h))
 
         #msg = self.bridge.cv2_to_imgmsg(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        msg = self.bridge.cv2_to_imgmsg(image)
+        msg = self.bridge.cv2_to_imgmsg(yellow_segment)
         msg.header.stamp = rospy.Time.now()
         self.seg_image_pub.publish(msg)
 
