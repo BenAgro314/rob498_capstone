@@ -238,6 +238,7 @@ class Detector:
             "map", "base_link", image_time).transform
         except Exception as e:
             print(e)
+            return
         q = t_map_base.rotation
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
