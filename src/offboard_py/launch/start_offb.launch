@@ -43,7 +43,7 @@
 
 	<!-- Publish a static transformation between base_link and camera_odom_frame -->
 	<node pkg="tf" type="static_transform_publisher" name="base_link_to_imx219"
-			args="0 0 0 0 -1.5707 1.5707 base_link imx219 1000"/>
+			args="0 0 0 0 1.5707 1.5707 base_link imx219 1000"/>
 
 	<node name="tracker" pkg="offboard_py" type="tracker.py" output="screen"/>
 </launch>

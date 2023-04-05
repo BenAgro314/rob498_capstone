@@ -106,23 +106,27 @@ def get_mask_from_range(hsv_img, low, high):
 
 def reproject_2D_to_3D(bbox, actual_height, K):
     # Extract the focal length (fx) and the optical center (cx, cy) from the intrinsic matrix
-    fx = K[0, 0]
-    cx = K[0, 2]
-    cy = K[1, 2]
-
-    # Calculate the width of the bounding box in pixels
-    bbox_height_pixels = bbox[3] - bbox[1]
-
-    # Calculate the depth (Z) of the object based on the known width and the width in pixels
-    depth = (fx * actual_height) / bbox_height_pixels
 
     # Calculate the 2D coordinates of the center of the bounding box
     center_x_2D = (bbox[0] + bbox[2]) / 2
     center_y_2D = (bbox[1] + bbox[3]) / 2
 
+    Kinv = np.linalg.inv(K)
+
+    upper_y_2D = np.array([center_x_2D, bbox[1], 1])[:, None]
+    lower_y_2D = np.array([center_x_2D, bbox[3], 1])[:, None]
+
+    upper_y_plane = Kinv @ upper_y_2D
+    lower_y_plane = Kinv @ lower_y_2D
+
+    depth = actual_height / (lower_y_plane[1] - upper_y_plane[1])
+
+    center_2D = np.array([center_x_2D, center_y_2D, 1])[:, None]
+    center_plane = Kinv @ center_2D
+
     # Reproject the 2D center to 3D
-    center_x_3D = (center_x_2D - cx) * depth / fx
-    center_y_3D = (center_y_2D - cy) * depth / fx
+    center_x_3D = center_plane[0] * depth
+    center_y_3D = center_plane[1] * depth
 
     # Return the 3D coordinates of the center of the bounding box
     return center_x_3D, center_y_3D, depth
