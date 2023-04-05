@@ -147,7 +147,6 @@ class Detector:
         )
         #D = np.array([[-0.37906155, 0.2780121, -0.00092033, 0.00087556, -0.21837157]])
         self.D = np.array([[-3.97718724e-01, 3.27660950e-02, -5.45843945e-04, -8.40769238e-03, 9.20723812e-01]])
-        self.image_sub= rospy.Subscriber("imx219_image", Image, callback = self.image_callback)
         #self.pose_sub = rospy.Subscriber("imx219_image", Image, callback = self.image_callback)
         self.seg_image_pub= rospy.Publisher("imx219_seg", Image, queue_size=10)
         self.bridge = CvBridge()
@@ -173,6 +172,7 @@ class Detector:
 
         # Call the callback function with the transform
         #callback(transform_stamped)
+        self.image_sub= rospy.Subscriber("imx219_image", Image, callback = self.image_callback)
 
 
     #def transformation_callback(transform_stamped):
@@ -231,7 +231,10 @@ class Detector:
     def image_callback(self, msg: Image):
 
         image_time = msg.header.stamp
-        self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(10))
+        try:
+            self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
+        except Exception as e:
+            return
         t_map_base = self.tf_buffer.lookup_transform(
            "map", "base_link", image_time).transform
         q = t_map_base.rotation
