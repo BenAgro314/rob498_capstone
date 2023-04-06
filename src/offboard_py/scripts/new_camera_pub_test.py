@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import time
 import cv2
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
@@ -45,6 +46,7 @@ def publish_images():
 
 if __name__ == '__main__':
     try:
+        time.sleep(5)
         publish_images()
     except rospy.ROSInterruptException:
         pass
