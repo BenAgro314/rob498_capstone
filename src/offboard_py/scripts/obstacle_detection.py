@@ -213,7 +213,7 @@ class Detector:
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
         image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        image = undistort_image(image, self.K, self.D)
+        #image = undistort_image(image, self.K, self.D)
         image = rotate_image(image, np.rad2deg(pitch))
         scale = 1.0
         image = scale_image(image, scale)
