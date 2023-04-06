@@ -75,6 +75,9 @@ class Tracker:
         #pt_imx = np.array([pos.x, pos.y, pos.z, 1])[:, None] # (3, 1)
 
         image_time = msg.header.stamp
+        if not  self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5)):
+            print(f"Tracker detector not up yet. Detector time - current time: {image_time.to_sec() - rospy.Time.now().to_sec()} s")
+            return
         self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
         t_map_base = self.tf_buffer.lookup_transform(
         "map", "base_link", image_time).transform
