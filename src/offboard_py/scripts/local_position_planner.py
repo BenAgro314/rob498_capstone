@@ -29,7 +29,7 @@ class LocalPlanner:
         self.map_res = None
         self.map_origin = None
 
-        self.waypoint_trans_ths = 0.1 # 0.08 # used in pose_is_close
+        self.waypoint_trans_ths = 0.15 # 0.08 # used in pose_is_close
         self.waypoint_yaw_ths = np.deg2rad(10.0) # used in pose_is_close
 
         self.map_lock = Lock()
@@ -159,9 +159,9 @@ class LocalPlanner:
                 return
             occ_map = self.map.copy()[:, :, 0]
 
-
         # Define structuring element
         occ_mask = (occ_map > 50).astype(np.uint8)
+        print(f"Num obstacle cells in path : {occ_mask.sum() - 236}")
         buff_inds = 2 * int(round(self.vehicle_radius / self.map_res)) + 1
         kernel = np.ones((buff_inds, buff_inds), np.uint8) # add on 3 * map_res of 
         # Apply dilation filter
