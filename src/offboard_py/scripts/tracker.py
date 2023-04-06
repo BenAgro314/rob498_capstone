@@ -14,6 +14,7 @@ from cv_bridge import CvBridge
 from visualization_msgs.msg import Marker
 from skimage.draw import disk, polygon
 
+
 class Tracker:
 
     def __init__(self):
@@ -68,12 +69,12 @@ class Tracker:
     def cyl_callback(self, msg):
         #pos = msg.pose.position
 
+        pos_mask = np.zeros_like(self.logits, dtype = np.uint8)
+        neg_mask = np.zeros_like(self.logits, dtype = np.uint8)
 
-        pos_mask = np.zeros_like(self.logits, dtype = bool)
-        neg_mask = np.zeros_like(self.logits, dtype = bool)
+        #pt_imx = np.array([pos.x, pos.y, pos.z, 1])[:, None] # (3, 1)
 
         image_time = msg.header.stamp
-        #pt_imx = np.array([pos.x, pos.y, pos.z, 1])[:, None] # (3, 1)
         self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5))
         t_map_base = self.tf_buffer.lookup_transform(
         "map", "base_link", image_time).transform
@@ -83,6 +84,7 @@ class Tracker:
         x_base, y_base, _, _, _, yaw_base = get_config_from_transformation(t_map_base)
         t_map_base  = transform_to_numpy(t_map_base)
         t_base_imx  = transform_to_numpy(t_base_imx)
+        t_map_imx = t_map_base @ t_base_imx
 
         cam_angle = yaw_base - np.pi / 2
         min_fov_pt = x_base + self.range * np.cos(cam_angle + self.fov[0]), y_base + self.range * np.sin(cam_angle + self.fov[0]), 0
@@ -91,52 +93,21 @@ class Tracker:
         min_fov_ind = self.point_to_ind(np.array(min_fov_pt)[:, None])
         max_fov_ind = self.point_to_ind(np.array(max_fov_pt)[:, None])
 
+        pts = np.array([[base_ind[1], base_ind[0]], [min_fov_ind[1], min_fov_ind[0]], [max_fov_ind[1], max_fov_ind[0]]], np.int32)
+        cv2.fillPoly(neg_mask, [pts], 1)
+        neg_mask = neg_mask == 1
+
         imx_points = pointcloud2_to_numpy(msg)
-        if len(imx_points) == 0:
-            poly_rr, poly_cc = polygon([base_ind[0], min_fov_ind[0], max_fov_ind[0]], [base_ind[1], min_fov_ind[1], max_fov_ind[1]], shape = self.logits.shape)
-            neg_mask[poly_rr, poly_cc] = True
-        else:
-            for pt_imx in imx_points:
-                pt_imx = np.concatenate((pt_imx[:, None], np.array([[1]])), axis = 0) # (3, 1)
-                pt_imx_left = pt_imx.copy()
-                pt_imx_right = pt_imx.copy()
+        print(f"Detected {imx_points.shape[0]} obstacles!")
+        for pt_imx in imx_points:
+            pt_imx = np.concatenate((pt_imx[:, None], np.array([[1]])), axis = 0) # (3, 1)
 
-                pt_imx_left[0] -= self.radius
-                pt_imx_right[0] += self.radius
+            pt_map = t_map_imx @ pt_imx
+            pt_map[2, 0] = 0.0 # zero out z
 
-                t_map_imx = t_map_base @ t_base_imx
+            cv2.circle(pos_mask, self.point_to_ind(pt_map)[::-1], int(round(self.radius // self.map_res)), 1, thickness = -1)
 
-                pt_map_left = t_map_imx @ pt_imx_left
-                pt_map_right = t_map_imx @ pt_imx_right
-
-                pt_map_left[2, 0] = 0.0
-                pt_map_right[2, 0] = 0.0
-
-                left_ind = self.point_to_ind(pt_map_left)                 
-                right_ind = self.point_to_ind(pt_map_right)                 
-
-                angle_left = np.arctan2(pt_map_left[1] - y_base, pt_map_left[0] - x_base)
-                angle_right = np.arctan2(pt_map_right[1] - y_base, pt_map_right[0] - x_base)
-
-                left_fov_pt = (x_base + self.range * np.cos(angle_left))[0], (y_base + self.range * np.sin(angle_left))[0], 0
-                right_fov_pt = (x_base + self.range * np.cos(angle_right))[0], (y_base + self.range * np.sin(angle_right))[0], 0
-
-                left_fov_ind = self.point_to_ind(np.array(left_fov_pt)[:, None])
-                right_fov_ind = self.point_to_ind(np.array(right_fov_pt)[:, None])
-                
-                poly_rr, poly_cc = polygon([base_ind[0], min_fov_ind[0], left_fov_ind[0], left_ind[0], right_ind[0], right_fov_ind[0], max_fov_ind[0]], [base_ind[1], min_fov_ind[1],  left_fov_ind[1], left_ind[1], right_ind[1], right_fov_ind[1], max_fov_ind[1]], shape = self.logits.shape)
-                neg_mask[poly_rr, poly_cc] = True
-
-                pt_map = t_map_imx @ pt_imx
-                pt_map[2, 0] = 0.0 # zero out z
-
-                rr, cc = disk(self.point_to_ind(pt_map), self.radius // self.map_res)
-                rr[rr >= pos_mask.shape[0]]  = pos_mask.shape[0] - 1
-                rr[rr < 0]  = 0
-                cc[cc >= pos_mask.shape[1]]  = pos_mask.shape[1] - 1
-                cc[cc < 0]  = 0
-                pos_mask[rr, cc] = True
-
+        pos_mask = pos_mask == 1
         neg_mask = np.logical_and(neg_mask, ~pos_mask)
 
         self.logits[neg_mask] += self.beta
@@ -159,7 +130,7 @@ class Tracker:
         row_ind = (y - self.map_bounds[1]) // (self.map_res) 
         col_ind = (x - self.map_bounds[0]) // (self.map_res) 
 
-        return (row_ind, col_ind)
+        return (int(row_ind), int(col_ind))
 
 
 

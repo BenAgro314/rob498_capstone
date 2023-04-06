@@ -134,10 +134,6 @@ def reproject_2D_to_3D(bbox, actual_height, K):
 class Detector:
 
     def __init__(self):
-        #self.K = np.array([[1581.5, 0, 1034.7], # needs to be tuned
-        #                            [0, 1588.7, 557.16],
-        #                            [0, 0, 1]])
-        #self.D = np.array([[-0.37906155, 0.2780121, -0.00092033, 0.00087556, -0.21837157]])
         self.K = np.array(
             [
                 [342.6836426,    0.,         313.55097801],
@@ -145,9 +141,7 @@ class Detector:
                 [  0.,           0.,           1.        ]
             ]
         )
-        #D = np.array([[-0.37906155, 0.2780121, -0.00092033, 0.00087556, -0.21837157]])
         self.D = np.array([[-3.97718724e-01, 3.27660950e-02, -5.45843945e-04, -8.40769238e-03, 9.20723812e-01]])
-        #self.pose_sub = rospy.Subscriber("imx219_image", Image, callback = self.image_callback)
         self.seg_image_pub= rospy.Publisher("imx219_seg", Image, queue_size=10)
         self.bridge = CvBridge()
         self.marker_pub = rospy.Publisher('/cylinder_marker', Marker, queue_size=10)
@@ -162,29 +156,7 @@ class Detector:
         self.target_frame = 'base_link'
 
         self.prev_rects = []
-
-        # Wait for the transform to become available
-        #rospy.loginfo("Waiting for transform from {} to {}".format(source_frame, target_frame))
-        #tf_buffer.can_transform(target_frame, source_frame, rospy.Time(), rospy.Duration(10.0))
-
-        # Get the transform
-        #transform_stamped = tf_buffer.lookup_transform(target_frame, source_frame, rospy.Time())
-
-        # Call the callback function with the transform
-        #callback(transform_stamped)
         self.image_sub= rospy.Subscriber("imx219_image", Image, callback = self.image_callback)
-
-
-    #def transformation_callback(transform_stamped):
-    #    # Extract the translation and rotation information from the transform
-    #    translation = transform_stamped.transform.translation
-    #    rotation = transform_stamped.transform.rotation
-
-    #    # Print the translation and rotation information
-    #    rospy.loginfo("Translation: x={:.3f}, y={:.3f}, z={:.3f}".format(
-    #        translation.x, translation.y, translation.z))
-    #    rospy.loginfo("Rotation: x={:.3f}, y={:.3f}, z={:.3f}, w={:.3f}".format(
-    #        rotation.x, rotation.y, rotation.z, rotation.w))
 
     def publish_cylinder_marker(self, w_fit, C_fit, r_fit, frame_id):
         marker = Marker()
@@ -233,12 +205,11 @@ class Detector:
         image_time = msg.header.stamp
         #image_time = rospy.Time(0)
         if not  self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5)):
-            print("Obstacle detector not up yet")
+            print(f"Obstacle detector not up yet. Image time - current time: {image_time.to_sec() - rospy.Time.now().to_sec()} s")
             return
         t_map_base = self.tf_buffer.lookup_transform(
         "map", "base_link", image_time).transform
         q = t_map_base.rotation
-                q = t_map_base.rotation
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
         image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -257,20 +228,20 @@ class Detector:
         lower_yellow = (10, 240, 0)
         upper_yellow = (80, 255, 255)
         
-        lower_red = (0, 0, 0)
-        upper_red = (10, 255, 255)
+        #lower_red = (0, 0, 0)
+        #upper_red = (10, 255, 255)
 
-        lower_green = (40, 0, 0)
-        upper_green = (80, 255, 255)
+        #lower_green = (40, 0, 0)
+        #upper_green = (80, 255, 255)
 
         # Create a binary mask using the defined yellow range
         yellow_mask = get_mask_from_range(hsv_image, lower_yellow, upper_yellow)
         yellow_mask = cv2.blur(yellow_mask, (21, 5))
-        red_mask = get_mask_from_range(hsv_image, lower_red, upper_red)
-        green_mask = get_mask_from_range(hsv_image, lower_green, upper_green)
+        #red_mask = get_mask_from_range(hsv_image, lower_red, upper_red)
+        #green_mask = get_mask_from_range(hsv_image, lower_green, upper_green)
         
 
-        yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
+        #yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
         #red_segment = cv2.bitwise_and(image, image, mask=red_mask)
         #green_segment = cv2.bitwise_and(image, image, mask=green_mask)
 
@@ -292,26 +263,6 @@ class Detector:
                     # filter out boxes on the top
                     if x == 0 and not x+w > image.shape[1] //2:
                         continue
-                    max_iou = 0
-                    for x_other, y_other, w_other, h_other in self.prev_rects:
-                        bbox_curr = {
-                            "x1": 0,
-                            "x2": 0+w,
-                            "y1": 0,
-                            "y2": 0+h,
-                        }
-                        bbox_other = {
-                            "x1": 0,
-                            "x2": 0+w_other,
-                            "y1": 0,
-                            "y2": 0+h_other,
-                        }
-                        iou = get_iou(bbox_curr, bbox_other)
-                        if iou > max_iou:
-                            max_iou = iou
-                    #print(max_iou)
-                    if max_iou < 0.80: # must find match in previous frame
-                        continue
 
                     if y > image.shape[0]//8 and (y + h) < 7 * image.shape[0]//8:
                         #cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -322,36 +273,27 @@ class Detector:
 
                         #middle = (y + h//2)/scale
                         #if middle > image.shape[0] // 4 and  middle < 3 * image.shape[0] // 4:
-                        self.publish_cylinder_marker(np.array([1, 0, 0]), p_box_cam, 0.15, frame_id="imx219")
+                        #self.publish_cylinder_marker(np.array([1, 0, 0]), p_box_cam, 0.15, frame_id="imx219")
 
-                        percent_green = np.sum(green_mask[y:y+h, x:x+w])/(255 * w * h)
-                        percent_red = np.sum(red_mask[y:y+h, x:x+w])/(255 * w * h)
-                        if percent_green > 0.03:
-                            cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                        elif percent_red > 0.03:
-                            cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                        else:
-                            cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                        #percent_green = np.sum(green_mask[y:y+h, x:x+w])/(255 * w * h)
+                        #percent_red = np.sum(red_mask[y:y+h, x:x+w])/(255 * w * h)
+                        #if percent_green > 0.03:
+                        #    cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        #elif percent_red > 0.03:
+                        #    cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                        #else:
+                        #    cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
         det_points = np.stack(det_points, axis = 0) if len(det_points) > 0 else np.array([])
         pc = numpy_to_pointcloud2(det_points, frame_id='map')
+        pc.header.stamp = image_time
         self.det_point_pub.publish(pc)
-
-        self.prev_rects = []
-
-        for contour in yellow_contours:
-            area = cv2.contourArea(contour)
-            if area > min_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                aspect_ratio = float(w) / h
-                if 3 < aspect_ratio:
-                    self.prev_rects.append((x, y, w, h))
 
         #msg = self.bridge.cv2_to_imgmsg(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
         #msg = self.bridge.cv2_to_imgmsg(image)
-        msg = self.bridge.cv2_to_imgmsg(yellow_segment)
-        msg.header.stamp = rospy.Time.now()
-        self.seg_image_pub.publish(msg)
+        #msg = self.bridge.cv2_to_imgmsg(yellow_segment)
+        #msg.header.stamp = rospy.Time.now()
+        #self.seg_image_pub.publish(msg)
 
 
 if __name__ == "__main__":
