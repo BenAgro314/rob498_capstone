@@ -1,6 +1,6 @@
 poses:
 - position:
-    x: 4
+    x: 4.0
     y: 0
     z: 1.1
   orientation:
@@ -10,6 +10,15 @@ poses:
     w: 1.0
 - position:
     x: 0
+    y: 0
+    z: 1.1
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+- position:
+    x: 4.0
     y: 0
     z: 1.1
   orientation:
