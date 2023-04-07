@@ -204,7 +204,7 @@ class Detector:
 
         image_time = msg.header.stamp
         #image_time = rospy.Time(0)
-        if not  self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(5)):
+        if not  self.tf_buffer.can_transform('map', 'base_link', image_time, timeout=rospy.Duration(0.2)):
             print(f"Obstacle detector not up yet. Image time - current time: {image_time.to_sec() - rospy.Time.now().to_sec()} s")
             return
         t_map_base = self.tf_buffer.lookup_transform(

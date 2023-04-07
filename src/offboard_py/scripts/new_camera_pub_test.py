@@ -46,7 +46,7 @@ def publish_images():
 
 if __name__ == '__main__':
     try:
-        time.sleep(5)
+        time.sleep(15)
         publish_images()
     except rospy.ROSInterruptException:
         pass
