@@ -142,9 +142,9 @@ class Detector:
             ]
         )
         self.D = np.array([[-3.97718724e-01, 3.27660950e-02, -5.45843945e-04, -8.40769238e-03, 9.20723812e-01]])
-        self.seg_image_pub= rospy.Publisher("imx219_seg", Image, queue_size=10)
+        #self.seg_image_pub= rospy.Publisher("imx219_seg", Image, queue_size=10)
         self.bridge = CvBridge()
-        self.marker_pub = rospy.Publisher('/cylinder_marker', Marker, queue_size=10)
+        #self.marker_pub = rospy.Publisher('/cylinder_marker', Marker, queue_size=10)
 
         self.det_point_pub = rospy.Publisher("det_points", PointCloud2, queue_size=10)
 
