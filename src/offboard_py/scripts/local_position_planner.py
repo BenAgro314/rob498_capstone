@@ -161,7 +161,7 @@ class LocalPlanner:
 
         # Define structuring element
         occ_mask = (occ_map > 50).astype(np.uint8)
-        print(f"Num obstacle cells in path : {occ_mask.sum() - 236}")
+        #print(f"Num obstacle cells in path : {occ_mask.sum() - 236}")
         buff_inds = 2 * int(round(self.vehicle_radius / self.map_res)) + 1
         kernel = np.ones((buff_inds, buff_inds), np.uint8) # add on 3 * map_res of 
         # Apply dilation filter

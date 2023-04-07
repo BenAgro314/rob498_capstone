@@ -45,6 +45,16 @@ class Tracker:
     def publish_occupancy_grid(self):
         map = np.exp(self.logits) / (1 + np.exp(self.logits))
 
+        mask = map > 50
+        for r in range(map.shape[0]):
+            for c in range(map.shape[1]):
+                if mask[r][c]:
+                    print(".", end = '')
+                else:
+                    print("#", end = '')
+                if c == map.shape[1] - 1:
+                    print()
+
         height, width = map.shape
         occupancy_grid = OccupancyGrid()
         occupancy_grid.header.stamp = rospy.Time.now()
