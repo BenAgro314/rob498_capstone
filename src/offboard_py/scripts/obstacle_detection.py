@@ -148,7 +148,7 @@ class Detector:
 
         self.det_point_pub = rospy.Publisher("det_points", PointCloud2, queue_size=10)
 
-        self.tf_buffer = tf2_ros.Buffer(cache_time=rospy.Duration(60.0))
+        self.tf_buffer = tf2_ros.Buffer(cache_time=rospy.Duration(10.0))
         tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # Define the source and target frames
@@ -213,7 +213,7 @@ class Detector:
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
         image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        #image = undistort_image(image, self.K, self.D)
+        image = undistort_image(image, self.K, self.D)
         image = rotate_image(image, np.rad2deg(pitch))
         scale = 1.0
         image = scale_image(image, scale)

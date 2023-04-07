@@ -21,12 +21,12 @@ class Tracker:
         self.points = None
         self.cyl_sub= rospy.Subscriber("det_points", PointCloud2, callback = self.cyl_callback)
 
-        self.tf_buffer = tf2_ros.Buffer(cache_time=rospy.Duration(60.0))
+        self.tf_buffer = tf2_ros.Buffer(cache_time=rospy.Duration(10.0))
         tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.occ_map_pub = rospy.Publisher('occ_map', OccupancyGrid, queue_size=10)
 
         self.map_bounds = [-4.5, -4.5, 4.5, 4.5] # min_x, min_y, max_x, max_y
-        self.map_res = 0.15
+        self.map_res = 0.3
 
         self.map_shape = (
                 int((self.map_bounds[3] - self.map_bounds[1]) // self.map_res),
@@ -41,17 +41,19 @@ class Tracker:
         self.fov = (-np.pi/8, np.pi/8)
         self.range = 10
         self.wall_width = 0.1
+        self.wall_inds = max(int(round(self.wall_width/self.map_res)), 1)
+
 
     def publish_occupancy_grid(self):
         map = np.exp(self.logits) / (1 + np.exp(self.logits))
 
-        mask = map > 50
+        mask = map > 0.5
         for r in range(map.shape[0]):
             for c in range(map.shape[1]):
                 if mask[r][c]:
-                    print(".", end = '')
-                else:
                     print("#", end = '')
+                else:
+                    print(".", end = '')
                 if c == map.shape[1] - 1:
                     print()
 
@@ -110,13 +112,10 @@ class Tracker:
         neg_mask = neg_mask == 1
 
         imx_points = pointcloud2_to_numpy(msg)
-        print(f"Detected {imx_points.shape[0]} obstacles!")
         for pt_imx in imx_points:
             pt_imx = np.concatenate((pt_imx[:, None], np.array([[1]])), axis = 0) # (3, 1)
-
             pt_map = t_map_imx @ pt_imx
             pt_map[2, 0] = 0.0 # zero out z
-
             cv2.circle(pos_mask, self.point_to_ind(pt_map)[::-1], int(round(self.radius // self.map_res)), 1, thickness = -1)
 
         pos_mask = pos_mask == 1
@@ -126,12 +125,10 @@ class Tracker:
         self.logits[pos_mask] += self.alpha
         self.logits = np.clip(self.logits, a_min = -2, a_max = 10)
 
-        width_inds = int(round(self.wall_width/self.map_res))
-        self.logits[-width_inds:] = 10
-        self.logits[:, -width_inds:] = 10
-        self.logits[:width_inds] = 10
-        self.logits[:, :width_inds] = 10
-
+        self.logits[-self.wall_inds:] = 10
+        self.logits[:, -self.wall_inds:] = 10
+        self.logits[:self.wall_inds] = 10
+        self.logits[:, :self.wall_inds] = 10
         self.publish_occupancy_grid()
 
     def point_to_ind(self, pt):

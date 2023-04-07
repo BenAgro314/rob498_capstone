@@ -131,7 +131,7 @@ class LocalPlanner:
             x1, y1, z1, _, _, yaw1 = get_config_from_pose_stamped(p1)
             x2, y2, z2, _, _, yaw2 = get_config_from_pose_stamped(p2)
             dyaw = np.abs(shortest_signed_angle(yaw1, yaw2))
-            dd = np.sqrt((x1 - x2)**2  + (y1 - y2)**2 + (z1 - z2)**2)
+            dd = np.sqrt((x1 - x2)**2  + (y1 - y2)**2) # + (z1 - z2)**2)
             n = max(1, int((dd / 0.2)) + int((dyaw / np.deg2rad(5))))
             for i in range(n):
                 p = slerp_pose(p1.pose, p2.pose, rospy.Time(0), rospy.Time(1), rospy.Time((i+1)/n), 'map')
@@ -161,7 +161,6 @@ class LocalPlanner:
 
         # Define structuring element
         occ_mask = (occ_map > 50).astype(np.uint8)
-        #print(f"Num obstacle cells in path : {occ_mask.sum() - 236}")
         buff_inds = 2 * int(round(self.vehicle_radius / self.map_res)) + 1
         kernel = np.ones((buff_inds, buff_inds), np.uint8) # add on 3 * map_res of 
         # Apply dilation filter
@@ -209,5 +208,4 @@ class LocalPlanner:
 
         self.path_pub.publish(self.current_path)
 
-        #print(f"Planning time: {time.time() - t}")
         return self.current_path
