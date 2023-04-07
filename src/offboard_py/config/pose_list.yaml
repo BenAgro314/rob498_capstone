@@ -2,7 +2,7 @@ poses:
 - position:
     x: -2.31
     y: 2.23
-    z: 1.77
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
@@ -11,7 +11,7 @@ poses:
 - position:
     x: 0.09
     y: 2.38
-    z: 1.63
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
@@ -20,7 +20,7 @@ poses:
 - position:
     x: 2.74
     y: 2.27
-    z: 0.856
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
@@ -29,7 +29,7 @@ poses:
 - position:
     x: 1.61
     y: 0.177
-    z: 1.829
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
@@ -38,7 +38,7 @@ poses:
 - position:
     x: 2.15
     y: -2.16
-    z: 1.722
+    z: 1.5
   orientation:
     x: 0
     y: 0
@@ -47,7 +47,7 @@ poses:
 - position:
     x: 0.989
     y: -2.60
-    z: 1.65
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
@@ -56,7 +56,7 @@ poses:
 - position:
     x: -2.41
     y: -2.55
-    z: 0.84
+    z: 1.5
   orientation:
     x: 0.0
     y: 0.0
