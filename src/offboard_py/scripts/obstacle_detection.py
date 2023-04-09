@@ -131,6 +131,29 @@ def reproject_2D_to_3D(bbox, actual_height, K):
     # Return the 3D coordinates of the center of the bounding box
     return center_x_3D, center_y_3D, depth
 
+def reproject_2D_to_3D_v2(height, center, actual_height, K):
+    # height
+    # center (x, y)
+    # Extract the focal length (fx) and the optical center (cx, cy) from the intrinsic matrix
+
+    # Calculate the 2D coordinates of the center of the bounding box
+    center_x_2D = center[0]
+    center_y_2D = center[1]
+
+    Kinv = np.linalg.inv(K)
+
+    depth = actual_height / (Kinv[1, 1] * height)
+
+    center_2D = np.array([center_x_2D, center_y_2D, 1])[:, None]
+    center_plane = Kinv @ center_2D
+
+    # Reproject the 2D center to 3D
+    center_x_3D = center_plane[0] * depth
+    center_y_3D = center_plane[1] * depth
+
+    # Return the 3D coordinates of the center of the bounding box
+    return center_x_3D, center_y_3D, depth
+
 class Detector:
 
     def __init__(self):
@@ -142,9 +165,9 @@ class Detector:
             ]
         )
         self.D = np.array([[-3.97718724e-01, 3.27660950e-02, -5.45843945e-04, -8.40769238e-03, 9.20723812e-01]])
-        #self.seg_image_pub= rospy.Publisher("imx219_seg", Image, queue_size=10)
+        self.seg_image_pub= rospy.Publisher("imx219_seg", Image, queue_size=10)
         self.bridge = CvBridge()
-        #self.marker_pub = rospy.Publisher('/cylinder_marker', Marker, queue_size=10)
+        self.marker_pub = rospy.Publisher('/cylinder_marker', Marker, queue_size=10)
 
         self.det_point_pub = rospy.Publisher("det_points", PointCloud2, queue_size=10)
 
@@ -231,14 +254,14 @@ class Detector:
         #lower_red = (0, 0, 0)
         #upper_red = (10, 255, 255)
 
-        #lower_green = (40, 0, 0)
-        #upper_green = (80, 255, 255)
+        lower_green = (40, 0, 0)
+        upper_green = (80, 255, 255)
 
         # Create a binary mask using the defined yellow range
         yellow_mask = get_mask_from_range(hsv_image, lower_yellow, upper_yellow)
         yellow_mask = cv2.blur(yellow_mask, (21, 5))
         #red_mask = get_mask_from_range(hsv_image, lower_red, upper_red)
-        #green_mask = get_mask_from_range(hsv_image, lower_green, upper_green)
+        green_mask = get_mask_from_range(hsv_image, lower_green, upper_green)
         
 
         #yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
@@ -248,41 +271,48 @@ class Detector:
         # Find contours in the binary mask
         yellow_contours, _ = cv2.findContours(yellow_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        min_area = 500 * scale
+        min_area = 1000 * scale
         det_points = []
         for contour in yellow_contours:
             area = cv2.contourArea(contour)
             if area > min_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                #x /= scale
-                #y /= scale
-                #w /= scale
-                #h /= scale
+                rect = cv2.minAreaRect(contour)
+                h = rect[1][0]
+                w = rect[1][1]
+
+                angle = rect[-1]
+                if abs(angle) < 70: # rotation of rectangle 
+                    continue
+
+                box = cv2.boxPoints(rect)
+                box = np.int0(box)
+
+                y_max = np.max(box[:, 1])
+                y_min = np.max(box[:, 1])
+
                 aspect_ratio = float(w) / h
-                if 3.0 < aspect_ratio:  # Aspect ratio range for the object of interest
-                    # filter out boxes on the top
-                    if x == 0 and not x+w > image.shape[1] //2:
-                        continue
+                if 2.0 < aspect_ratio:  # Aspect ratio range for the object of interest
 
-                    if y > image.shape[0]//8 and (y + h) < 7 * image.shape[0]//8:
+
+                    if y_min > image.shape[0]//8 and y_max < 7 * image.shape[0]//8:
                         #cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                        bbox = [x/scale, y/scale, (x+w)/scale, (y+h)/scale] # x_min, y_min, x_max, y_max
-                        p_box_cam =  reproject_2D_to_3D(bbox, 0.3, self.K)
+                        #bbox = [x/scale, y/scale, (x+w)/scale, (y+h)/scale] # x_min, y_min, x_max, y_max
+                        #p_box_cam =  reproject_2D_to_3D(bbox, 0.3, self.K)
+                        p_box_cam =  reproject_2D_to_3D_v2(h, rect[0], 0.3, self.K)
                         det_points.append(np.array(p_box_cam))
-                        #p_box_cam = (0, 0, p_box_cam[2])
 
-                        #middle = (y + h//2)/scale
-                        #if middle > image.shape[0] // 4 and  middle < 3 * image.shape[0] // 4:
-                        #self.publish_cylinder_marker(np.array([1, 0, 0]), p_box_cam, 0.15, frame_id="imx219")
 
-                        #percent_green = np.sum(green_mask[y:y+h, x:x+w])/(255 * w * h)
-                        #percent_red = np.sum(red_mask[y:y+h, x:x+w])/(255 * w * h)
-                        #if percent_green > 0.03:
-                        #    cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                        #elif percent_red > 0.03:
-                        #    cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                        #else:
-                        #    cv2.rectangle(yellow_segment, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+                        mask = np.zeros_like(hsv_image[:,:,0])
+                        cv2.fillPoly(mask, [box], 255)
+                        #print(np.sum(hsv_image[..., 2][mask]) / np.sum(mask))
+                        green_val = np.sum(np.logical_and(mask ,green_mask)) / np.sum(mask)
+
+                        if green_val > 1e-4:
+                            cv2.drawContours(image,[box],0,(0,255,0),2)
+                        else: 
+                            cv2.drawContours(image,[box],0,(0,0,255),2)
+
 
         det_points = np.stack(det_points, axis = 0) if len(det_points) > 0 else np.array([])
         pc = numpy_to_pointcloud2(det_points, frame_id='map')
@@ -290,10 +320,10 @@ class Detector:
         self.det_point_pub.publish(pc)
 
         #msg = self.bridge.cv2_to_imgmsg(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        #msg = self.bridge.cv2_to_imgmsg(image)
+        msg = self.bridge.cv2_to_imgmsg(image)
         #msg = self.bridge.cv2_to_imgmsg(yellow_segment)
         #msg.header.stamp = rospy.Time.now()
-        #self.seg_image_pub.publish(msg)
+        self.seg_image_pub.publish(msg)
 
 
 if __name__ == "__main__":

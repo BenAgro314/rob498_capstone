@@ -35,9 +35,9 @@ class Tracker:
         self.logits = np.zeros(
             self.map_shape
         )
-        self.radius=0.3
+        self.radius=0.15
         self.alpha = 1.0
-        self.beta = -0.05
+        self.beta = -0.1
         self.fov = (-np.pi/8, np.pi/8)
         self.range = 10
         self.wall_width = 0.1
@@ -116,7 +116,10 @@ class Tracker:
             pt_imx = np.concatenate((pt_imx[:, None], np.array([[1]])), axis = 0) # (3, 1)
             pt_map = t_map_imx @ pt_imx
             pt_map[2, 0] = 0.0 # zero out z
-            cv2.circle(pos_mask, self.point_to_ind(pt_map)[::-1], int(round(self.radius // self.map_res)), 1, thickness = -1)
+            inds = self.point_to_ind(pt_map)[::-1]
+            r = int(round(self.radius / self.map_res))
+            pos_mask[max(0, inds[1] - r):min(inds[1]+r+1, pos_mask.shape[0]-1), max(0, inds[0]-r):min(inds[0]+r+1, pos_mask.shape[1]-1)] = 1
+            #cv2.circle(pos_mask, , , 1, thickness = -1)
 
         pos_mask = pos_mask == 1
         neg_mask = np.logical_and(neg_mask, ~pos_mask)
