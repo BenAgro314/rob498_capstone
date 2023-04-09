@@ -12,19 +12,15 @@ from cv_bridge import CvBridge
 from visualization_msgs.msg import Marker
 from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs.point_cloud2 as pc2
+import time
+
+PUB_IMAGE = False
+UNDISTORT = False
 
 def undistort_image(img, K, D):
     # Undistort the image
     img = cv2.undistort(img, K, D)
     return img
-
-    # Display the original and undistorted images
-    #cv2.imshow('Original Image', img)
-    #cv2.imshow('Undistorted Image', undistorted_img)
-
-    ## Wait for a key press and close the windows
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
 
 def scale_image(img, scale):
     width = int(img.shape[1] * scale)
@@ -152,7 +148,7 @@ def reproject_2D_to_3D_v2(height, center, actual_height, K):
     center_y_3D = center_plane[1] * depth
 
     # Return the 3D coordinates of the center of the bounding box
-    return center_x_3D, center_y_3D, depth
+    return [center_x_3D, center_y_3D, depth]
 
 class Detector:
 
@@ -180,6 +176,9 @@ class Detector:
 
         self.prev_rects = []
         self.image_sub= rospy.Subscriber("imx219_image", Image, callback = self.image_callback)
+
+        self.shape = (540, 540)
+        self.map1, self.map2 = cv2.initUndistortRectifyMap(self.K, self.D, None, self.K, self.shape, cv2.CV_32FC1)
 
     def publish_cylinder_marker(self, w_fit, C_fit, r_fit, frame_id):
         marker = Marker()
@@ -236,7 +235,10 @@ class Detector:
         roll, pitch, yaw = quaternion_to_euler(q.x, q.y, q.z, q.w)
 
         image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        image = undistort_image(image, self.K, self.D)
+        assert self.shape == image.shape[:2]
+        #image = undistort_image(image, self.K, self.D)
+        if UNDISTORT:
+            image = cv2.remap(image, self.map1, self.map2, interpolation=cv2.INTER_LINEAR)
         image = rotate_image(image, np.rad2deg(pitch))
         scale = 1.0
         image = scale_image(image, scale)
@@ -273,6 +275,7 @@ class Detector:
 
         min_area = 1000 * scale
         det_points = []
+
         for contour in yellow_contours:
             area = cv2.contourArea(contour)
             if area > min_area:
@@ -299,8 +302,6 @@ class Detector:
                         #bbox = [x/scale, y/scale, (x+w)/scale, (y+h)/scale] # x_min, y_min, x_max, y_max
                         #p_box_cam =  reproject_2D_to_3D(bbox, 0.3, self.K)
                         p_box_cam =  reproject_2D_to_3D_v2(h, rect[0], 0.3, self.K)
-                        det_points.append(np.array(p_box_cam))
-
 
 
                         mask = np.zeros_like(hsv_image[:,:,0])
@@ -309,21 +310,27 @@ class Detector:
                         green_val = np.sum(np.logical_and(mask ,green_mask)) / np.sum(mask)
 
                         if green_val > 1e-4:
-                            cv2.drawContours(image,[box],0,(0,255,0),2)
+                            if PUB_IMAGE:
+                                cv2.drawContours(image,[box],0,(0,255,0),2)
+                            p_box_cam.append(ord('g')) # green
                         else: 
-                            cv2.drawContours(image,[box],0,(0,0,255),2)
+                            if PUB_IMAGE:
+                                cv2.drawContours(image,[box],0,(0,0,255),2)
+                            p_box_cam.append(ord('r')) # red
 
+                        det_points.append(np.array(p_box_cam))
 
         det_points = np.stack(det_points, axis = 0) if len(det_points) > 0 else np.array([])
-        pc = numpy_to_pointcloud2(det_points, frame_id='map')
+        pc = numpy_to_pointcloud2(det_points, frame_id='map', extra_features=['c'])
         pc.header.stamp = image_time
         self.det_point_pub.publish(pc)
 
         #msg = self.bridge.cv2_to_imgmsg(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        msg = self.bridge.cv2_to_imgmsg(image)
-        #msg = self.bridge.cv2_to_imgmsg(yellow_segment)
-        #msg.header.stamp = rospy.Time.now()
-        self.seg_image_pub.publish(msg)
+        if PUB_IMAGE:
+            msg = self.bridge.cv2_to_imgmsg(image)
+            #msg = self.bridge.cv2_to_imgmsg(yellow_segment)
+            #msg.header.stamp = rospy.Time.now()
+            self.seg_image_pub.publish(msg)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,8 @@ from cv_bridge import CvBridge
 from visualization_msgs.msg import Marker
 from skimage.draw import disk, polygon
 
+GREEN_IND = 0
+RED_IND = 1
 
 class Tracker:
 
@@ -23,7 +25,8 @@ class Tracker:
 
         self.tf_buffer = tf2_ros.Buffer(cache_time=rospy.Duration(10.0))
         tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.occ_map_pub = rospy.Publisher('occ_map', OccupancyGrid, queue_size=10)
+        self.green_occ_map_pub = rospy.Publisher('green_occ_map', OccupancyGrid, queue_size=10)
+        self.red_occ_map_pub = rospy.Publisher('red_occ_map', OccupancyGrid, queue_size=10)
 
         self.map_bounds = [-5.0, -5.0, 5.0, 5.0] # min_x, min_y, max_x, max_y
         self.map_res = 0.2
@@ -33,29 +36,19 @@ class Tracker:
                 int((self.map_bounds[2] - self.map_bounds[0]) // self.map_res)
             )
         self.logits = np.zeros(
-            self.map_shape
+            self.map_shape + (2,)
         )
+        
         self.radius=0.15
         self.alpha = 1.0
         self.beta = -0.1
         self.fov = (-np.pi/8, np.pi/8)
         self.range = 10
-        self.wall_width = 0.1
-        self.wall_inds = max(int(round(self.wall_width/self.map_res)), 1)
+        
 
 
-    def publish_occupancy_grid(self):
-        map = np.exp(self.logits) / (1 + np.exp(self.logits))
-
-        mask = map > 0.5
-        for r in range(map.shape[0]):
-            for c in range(map.shape[1]):
-                if mask[r][c]:
-                    print("#", end = '')
-                else:
-                    print(".", end = '')
-                if c == map.shape[1] - 1:
-                    print()
+    def publish_occupancy_grid(self, logits, pub):
+        map = np.exp(logits) / (1 + np.exp(logits))
 
         height, width = map.shape
         occupancy_grid = OccupancyGrid()
@@ -76,13 +69,13 @@ class Tracker:
 
         occupancy_grid.data = (map.flatten() * 100).astype(np.int8).tolist()
 
-        self.occ_map_pub.publish(occupancy_grid)
+        pub.publish(occupancy_grid)
 
     def cyl_callback(self, msg):
         #pos = msg.pose.position
 
         pos_mask = np.zeros_like(self.logits, dtype = np.uint8)
-        neg_mask = np.zeros_like(self.logits, dtype = np.uint8)
+        neg_mask = np.zeros_like(self.logits[:, :, 0], dtype = np.uint8)
 
         #pt_imx = np.array([pos.x, pos.y, pos.z, 1])[:, None] # (3, 1)
 
@@ -111,28 +104,41 @@ class Tracker:
         cv2.fillPoly(neg_mask, [pts], 1)
         neg_mask = neg_mask == 1
 
-        imx_points = pointcloud2_to_numpy(msg)
+        imx_points = pointcloud2_to_numpy(msg, extra_keys=('c',))
         for pt_imx in imx_points:
-            pt_imx = np.concatenate((pt_imx[:, None], np.array([[1]])), axis = 0) # (3, 1)
+            color = chr(int(pt_imx[3]))
+
+            pt_imx = np.concatenate((pt_imx[:3, None], np.array([[1]])), axis = 0) # (3, 1)
             pt_map = t_map_imx @ pt_imx
             pt_map[2, 0] = 0.0 # zero out z
             inds = self.point_to_ind(pt_map)[::-1]
             r = int(round(self.radius / self.map_res))
-            pos_mask[max(0, inds[1] - r):min(inds[1]+r+1, pos_mask.shape[0]-1), max(0, inds[0]-r):min(inds[0]+r+1, pos_mask.shape[1]-1)] = 1
+
+            if color == 'g':
+                pos_mask[max(0, inds[1] - r):min(inds[1]+r+1, pos_mask.shape[0]-1), max(0, inds[0]-r):min(inds[0]+r+1, pos_mask.shape[1]-1), GREEN_IND] = 1
+            elif color == 'r':
+                pos_mask[max(0, inds[1] - r):min(inds[1]+r+1, pos_mask.shape[0]-1), max(0, inds[0]-r):min(inds[0]+r+1, pos_mask.shape[1]-1), RED_IND] = 1
             #cv2.circle(pos_mask, , , 1, thickness = -1)
 
         pos_mask = pos_mask == 1
-        neg_mask = np.logical_and(neg_mask, ~pos_mask)
+        neg_mask = np.logical_and(neg_mask[:, :, None], ~pos_mask)
 
         self.logits[neg_mask] += self.beta
         self.logits[pos_mask] += self.alpha
         self.logits = np.clip(self.logits, a_min = -2, a_max = 10)
 
-        self.logits[-self.wall_inds:] = 10
-        self.logits[:, -self.wall_inds:] = 10
-        self.logits[:self.wall_inds] = 10
-        self.logits[:, :self.wall_inds] = 10
-        self.publish_occupancy_grid()
+        mask = np.logical_or(self.logits[..., 0] > 0, self.logits[..., 1] > 0)
+        for c in range(mask.shape[1] -1, -1, -1):
+            for r in range(mask.shape[0] -1, -1, -1):
+                if mask[r][c] > 0:
+                    print("#", end = '')
+                else:
+                    print(".", end = '')
+                if r == 0:
+                    print()
+
+        self.publish_occupancy_grid(self.logits[..., GREEN_IND], self.green_occ_map_pub)
+        self.publish_occupancy_grid(self.logits[..., RED_IND], self.red_occ_map_pub)
 
     def point_to_ind(self, pt):
         # pt.shape == (3, 1) or (2, 1)
