@@ -12,17 +12,48 @@ if __name__ == '__main__':
     capture_width = 540
     capture_height = 540
 
-    fps = 30
-    # Initialize the CSICamera from the jetcam package
-    camera = CSICamera(width=capture_width, height=capture_height, capture_fps=fps)
+    camera = CSICamera(width=width, height=height, capture_device=0)
 
-    # Capture images continuously
-    for i in range(20):
-        # Capture an image from the camera
-        path = "images/{i:02d}.png"
-        print(f"Saving: {path}")
-        cv_image = camera.read()
-        cv2.imwrite(path, cv_image)
-        cv2.imshow('Image', cv_image)
-        cv2.waitKey(0)
+    # Start the camera
+    camera.running = True
 
+    # Initialize a counter for the number of images captured
+    image_counter = 0
+
+    # Create a window to display the camera feed
+    cv2.namedWindow("Camera Feed", cv2.WINDOW_NORMAL)
+
+    try:
+        while image_counter < 20:
+            # Get the current frame from the camera
+            frame = camera.value
+            
+            # Display the frame in the window
+            cv2.imshow("Camera Feed", frame)
+            
+            # Wait for a key press (1 millisecond)
+            key = cv2.waitKey(1) & 0xFF
+            
+            # If the "c" key is pressed, capture and save the image
+            if key == ord("c"):
+                # Save the image to disk
+                cv2.imwrite(f"images/{image_counter}.png", frame)
+                
+                # Increment the image counter
+                image_counter += 1
+                
+                # Print a message indicating the image was captured
+                print(f"Image {image_counter} captured.")
+                
+                # Add a delay between captures (optional)
+                time.sleep(0.5)
+            
+            # If the "q" key is pressed, exit the loop
+            if key == ord("q"):
+                break
+    finally:
+        # Release the camera and close the window
+        camera.running = False
+        cv2.destroyAllWindows()
+
+    print("Finished capturing images.")
