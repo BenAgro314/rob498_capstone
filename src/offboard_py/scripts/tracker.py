@@ -134,14 +134,14 @@ class Tracker:
         self.logits = np.clip(self.logits, a_min = -2, a_max = 10)
 
         mask = np.logical_or(self.logits[..., 0] > 0, self.logits[..., 1] > 0)
-        #for c in range(mask.shape[1] -1, -1, -1):
-        #    for r in range(mask.shape[0] -1, -1, -1):
-        #        if mask[r][c] > 0:
-        #            print("#", end = '')
-        #        else:
-        #            print(".", end = '')
-        #        if r == 0:
-        #            print()
+        for c in range(mask.shape[1] -1, -1, -1):
+            for r in range(mask.shape[0] -1, -1, -1):
+                if mask[r][c] > 0:
+                    print("#", end = '')
+                else:
+                    print(".", end = '')
+                if r == 0:
+                    print()
 
         self.publish_occupancy_grid(self.logits[..., GREEN_IND], self.green_occ_map_pub)
         self.publish_occupancy_grid(self.logits[..., RED_IND], self.red_occ_map_pub)
