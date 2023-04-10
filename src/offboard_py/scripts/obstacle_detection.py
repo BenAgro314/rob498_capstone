@@ -148,7 +148,7 @@ def reproject_2D_to_3D_v2(height, center, actual_height, K):
     center_y_3D = center_plane[1] * depth
 
     # Return the 3D coordinates of the center of the bounding box
-    return [center_x_3D, center_y_3D, depth]
+    return [center_x_3D.item(), center_y_3D.item(), depth]
 
 class Detector:
 
