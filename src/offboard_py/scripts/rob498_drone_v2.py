@@ -251,7 +251,7 @@ class RobDroneControl():
         else:
             x, y, _, _, _, yaw = get_config_from_pose_stamped(self.current_t_map_dots)
 
-            for angle in np.linspace(yaw, yaw - 4*np.pi, 8):
+            for angle in np.linspace(yaw, yaw - 2*np.pi, 4):
                 self.waypoint_queue_push(config_to_pose_stamped(x, y, self.launch_height, angle, self.current_t_map_dots.header.frame_id))
             #pose_array = yaml_to_pose_array(os.path.join(get_current_directory(), "../config/build_map_poses.yaml"))
             #self.received_waypoints = pose_array
