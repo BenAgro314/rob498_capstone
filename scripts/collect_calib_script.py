@@ -12,7 +12,7 @@ if __name__ == '__main__':
     capture_width = 540
     capture_height = 540
 
-    camera = CSICamera(width=width, height=height, capture_device=0)
+    camera = CSICamera(width=capture_width, height=capture_height, capture_device=0)
 
     # Start the camera
     camera.running = True
