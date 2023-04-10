@@ -19,7 +19,7 @@ poses:
     w: 1.0
 - position:
     x: 3
-    y: 3
+    y: -3
     z: 1.5
   orientation:
     x: 0.0
@@ -27,8 +27,8 @@ poses:
     z: 0.0
     w: 1.0
 - position:
-    x: 3
-    y: 3
+    x: -3
+    y: -3
     z: 1.5
   orientation:
     x: 0.0
