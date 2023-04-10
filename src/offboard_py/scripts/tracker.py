@@ -28,7 +28,7 @@ class Tracker:
         self.green_occ_map_pub = rospy.Publisher('green_occ_map', OccupancyGrid, queue_size=10)
         self.red_occ_map_pub = rospy.Publisher('red_occ_map', OccupancyGrid, queue_size=10)
 
-        self.map_bounds = [-5.0, -5.0, 5.0, 5.0] # min_x, min_y, max_x, max_y
+        self.map_bounds = [-4.8, -4.8, 4.8, 4.8] # min_x, min_y, max_x, max_y
         self.map_res = 0.2
 
         self.map_shape = (
