@@ -59,7 +59,7 @@ class LocalPlanner:
         self.map_origin = None
 
         self.waypoint_trans_ths = 0.15 # 0.08 # used in pose_is_close
-        self.waypoint_yaw_ths = np.deg2rad(10.0) # used in pose_is_close
+        self.waypoint_yaw_ths = np.deg2rad(5.0) # used in pose_is_close
 
         self.path_pub = rospy.Publisher('local_plan', Path, queue_size=10)
 
