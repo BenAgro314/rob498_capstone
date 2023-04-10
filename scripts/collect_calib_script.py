@@ -17,9 +17,12 @@ if __name__ == '__main__':
     camera = CSICamera(width=capture_width, height=capture_height, capture_fps=fps)
 
     # Capture images continuously
-    for _ in range(20):
+    for i in range(20):
         # Capture an image from the camera
+        path = "images/{i:02d}.png"
+        print(f"Saving: {path}")
         cv_image = camera.read()
+        cv2.imwrite(path, cv_image)
         cv2.imshow('Image', cv_image)
         cv2.waitKey(0)
 
