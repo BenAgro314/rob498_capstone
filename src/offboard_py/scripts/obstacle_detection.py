@@ -153,14 +153,22 @@ def reproject_2D_to_3D_v2(height, center, actual_height, K):
 class Detector:
 
     def __init__(self):
+        #self.K = np.array(
+        #    [
+        #        [342.6836426,    0.,         313.55097801],
+        #        [  0., 607.63147143, 297.50936008],
+        #        [  0.,           0.,           1.        ]
+        #    ]
+        #)
+        #self.D = np.array([[-3.97718724e-01, 3.27660950e-02, -5.45843945e-04, -8.40769238e-03, 9.20723812e-01]])
         self.K = np.array(
             [
-                [342.6836426,    0.,         313.55097801],
-                [  0., 607.63147143, 297.50936008],
+                [334.94030171,    0.,         280.0627713],
+                [  0., 595.99313333, 245.316628],
                 [  0.,           0.,           1.        ]
             ]
         )
-        self.D = np.array([[-3.97718724e-01, 3.27660950e-02, -5.45843945e-04, -8.40769238e-03, 9.20723812e-01]])
+        self.D = np.array([[-0.36600591, 0.20973317, -0.00181088, 0.00102208, -0.07504754]])
         self.seg_image_pub= rospy.Publisher("imx219_seg", Image, queue_size=10)
         self.bridge = CvBridge()
         self.marker_pub = rospy.Publisher('/cylinder_marker', Marker, queue_size=10)
@@ -296,8 +304,7 @@ class Detector:
                 aspect_ratio = float(w) / h
                 if 2.0 < aspect_ratio:  # Aspect ratio range for the object of interest
 
-
-                    if y_min > image.shape[0]//8 and y_max < 7 * image.shape[0]//8:
+                    if (y_min < image.shape[0]//8) == (y_max > 7 * image.shape[0]//8):
                         #cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
                         #bbox = [x/scale, y/scale, (x+w)/scale, (y+h)/scale] # x_min, y_min, x_max, y_max
                         #p_box_cam =  reproject_2D_to_3D(bbox, 0.3, self.K)
