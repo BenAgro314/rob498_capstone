@@ -117,12 +117,12 @@ class Tracker:
 
             low = (inds[0]-r, inds[1]-r)
             high = (inds[0]+r, inds[1]+r)
-            print(low, high, pos_mask[:, :, GREEN_IND].shape)
+            pos_copy = np.copy(pos_mask[:, :, GREEN_IND])
+            cv2.rectangle(pos_copy, low, high, 1, -1)
             if color == 'g':
-                cv2.rectangle(pos_mask[:, :, GREEN_IND], low, high, 1, -1)
-                #pos_mask[max(0, inds[1] - r):min(inds[1]+r+1, pos_mask.shape[0]-1), max(0, inds[0]-r):min(inds[0]+r+1, pos_mask.shape[1]-1), GREEN_IND] = 1
+                pos_mask[:, :, GREEN_IND] = pos_copy
             elif color == 'r':
-                cv2.rectangle(pos_mask[:, :, RED_IND], low, high, 1, -1)
+                pos_mask[:, :, RED_IND] = pos_copy
                 #pos_mask[max(0, inds[1] - r):min(inds[1]+r+1, pos_mask.shape[0]-1), max(0, inds[0]-r):min(inds[0]+r+1, pos_mask.shape[1]-1), RED_IND] = 1
             #cv2.circle(pos_mask, , , 1, thickness = -1)
 
