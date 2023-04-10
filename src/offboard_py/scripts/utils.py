@@ -560,20 +560,26 @@ def get_current_directory():
     
     return script_directory
 
-def numpy_to_pointcloud2(points, frame_id='base_link', time = None):
+def numpy_to_pointcloud2(points, frame_id='base_link', extra_features = None):
     fields = [
         PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
         PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
         PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1)
     ]
 
+    if extra_features is not None:
+        for i, k in enumerate(extra_features):
+            fields.append(
+                PointField(name=k, offset=8 + 4 * i, datatype=PointField.FLOAT32, count=1)
+            )
+
     header = rospy.Header()
-    header.stamp = rospy.Time.now() if time is None else time
+    header.stamp = rospy.Time.now()
     header.frame_id = frame_id
 
     return pc2.create_cloud(header, fields, points)
 
-def pointcloud2_to_numpy(pointcloud):
+def pointcloud2_to_numpy(pointcloud, extra_keys = None):
     """
     Convert a PointCloud2 message to a NumPy array of points.
     
@@ -583,5 +589,7 @@ def pointcloud2_to_numpy(pointcloud):
     Returns:
     - points: A NumPy array of shape (N, 3) containing the points
     """
-    points = np.array(list(pc2.read_points(pointcloud, field_names=('x', 'y', 'z'))))
+    if extra_keys is None:
+        extra_keys = tuple()
+    points = np.array(list(pc2.read_points(pointcloud, field_names=('x', 'y', 'z') + extra_keys)))
     return points
