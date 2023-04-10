@@ -148,7 +148,7 @@ def reproject_2D_to_3D_v2(height, center, actual_height, K):
     center_y_3D = center_plane[1] * depth
 
     # Return the 3D coordinates of the center of the bounding box
-    return [center_x_3D.item(), center_y_3D.item(), depth]
+    return [center_x_3D, center_y_3D, depth]
 
 class Detector:
 
@@ -258,7 +258,7 @@ class Detector:
         hsv_image[:, :, 1] = sat
 
         # Define the lower and upper bounds for the color yellow in the HSV color space
-        lower_yellow = (10, 240, 0)
+        lower_yellow = (10, 200, 0)
         upper_yellow = (80, 255, 255)
         
         #lower_red = (0, 0, 0)
@@ -274,7 +274,7 @@ class Detector:
         green_mask = get_mask_from_range(hsv_image, lower_green, upper_green)
         
 
-        #yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
+        yellow_segment = cv2.bitwise_and(image, image, mask=yellow_mask)
         #red_segment = cv2.bitwise_and(image, image, mask=red_mask)
         #green_segment = cv2.bitwise_and(image, image, mask=green_mask)
 
@@ -288,16 +288,18 @@ class Detector:
             area = cv2.contourArea(contour)
             if area > min_area:
                 rect = cv2.minAreaRect(contour)
-                h = rect[1][0]
-                w = rect[1][1]
 
                 angle = rect[-1]
-                if abs(angle) < 70: # rotation of rectangle 
+
+                #cv2.drawContours(yellow_segment,[box],0,(0,0,255),2)
+                if abs(angle) > 20 and abs(angle) < 70: # rotation of rectangle 
                     continue
 
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
 
+                h = min(rect[1])
+                w = max(rect[1])
                 y_max = np.max(box[:, 1])
                 y_min = np.max(box[:, 1])
 
@@ -318,11 +320,11 @@ class Detector:
 
                         if green_val > 1e-4:
                             if PUB_IMAGE:
-                                cv2.drawContours(image,[box],0,(0,255,0),2)
+                                cv2.drawContours(yellow_segment,[box],0,(0,255,0),2)
                             p_box_cam.append(ord('g')) # green
                         else: 
                             if PUB_IMAGE:
-                                cv2.drawContours(image,[box],0,(0,0,255),2)
+                                cv2.drawContours(yellow_segment,[box],0,(0,0,255),2)
                             p_box_cam.append(ord('r')) # red
 
                         det_points.append(np.array(p_box_cam))
@@ -334,8 +336,8 @@ class Detector:
 
         #msg = self.bridge.cv2_to_imgmsg(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
         if PUB_IMAGE:
-            msg = self.bridge.cv2_to_imgmsg(image)
-            #msg = self.bridge.cv2_to_imgmsg(yellow_segment)
+            #msg = self.bridge.cv2_to_imgmsg(image)
+            msg = self.bridge.cv2_to_imgmsg(yellow_segment)
             #msg.header.stamp = rospy.Time.now()
             self.seg_image_pub.publish(msg)
 
