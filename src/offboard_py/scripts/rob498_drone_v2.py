@@ -51,7 +51,7 @@ class RobDroneControl():
         self.waypoint_trans_ths = 0.08 # 0.08 # used in pose_is_close
         self.waypoint_yaw_ths = np.deg2rad(10.0) # used in pose_is_close
         self.on_ground_ths = 0.05
-        self.launch_height = 1.0
+        self.launch_height = 1.5
         self.land_height = 0
         self.task_ball_radius = 0.15
 
