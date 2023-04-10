@@ -291,19 +291,20 @@ class Detector:
 
                 angle = rect[-1]
 
-                #cv2.drawContours(yellow_segment,[box],0,(0,0,255),2)
-                if abs(angle) > 20 and abs(angle) < 70: # rotation of rectangle 
+                if abs(angle) < 10:
+                    w = rect[1][0]
+                    h = rect[1][1]
+                elif abs(angle) > 80:
+                    h = rect[1][0]
+                    w = rect[1][1]
+                else:
                     continue
-
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
-
-                h = min(rect[1])
-                w = max(rect[1])
                 y_max = np.max(box[:, 1])
                 y_min = np.max(box[:, 1])
-
                 aspect_ratio = float(w) / h
+
                 if 2.0 < aspect_ratio:  # Aspect ratio range for the object of interest
 
                     if (y_min < image.shape[0]//8) == (y_max > 7 * image.shape[0]//8):
