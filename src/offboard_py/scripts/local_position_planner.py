@@ -16,7 +16,7 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Header
 import pyastar2d
 
-USE_COLOR = False
+USE_COLOR = True
 
 def coll_free(p1, p2, coll_fn, steps=10):
     pts = np.linspace(p1, p2, steps)
