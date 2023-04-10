@@ -168,7 +168,7 @@ class LocalPlanner:
             x2, y2, z2, _, _, yaw2 = get_config_from_pose_stamped(p2)
             dyaw = np.abs(shortest_signed_angle(yaw1, yaw2))
             dd = np.sqrt((x1 - x2)**2  + (y1 - y2)**2) # + (z1 - z2)**2)
-            n = max(1, int((dd / 0.2)) + int((dyaw / np.deg2rad(5))))
+            n = max(1, int((dd / 0.5)) + int((dyaw / np.deg2rad(5))))
             for i in range(n):
                 p = slerp_pose(p1.pose, p2.pose, rospy.Time(0), rospy.Time(1), rospy.Time((i+1)/n), 'map')
                 p.header.stamp = rospy.Time.now()
