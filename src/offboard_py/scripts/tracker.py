@@ -115,11 +115,14 @@ class Tracker:
             r = int(round(self.radius / self.map_res))
 
 
+            low = (inds[0]-r, inds[1]-r)
+            high = (inds[0]+r, inds[1]+r)
+            print(low, high, pos_mask[:, :, GREEN_IND].shape)
             if color == 'g':
-                cv2.rectangle(pos_mask[:, :, GREEN_IND], (inds[0]-r, inds[1]-r), (inds[0]+r, inds[1]+r), 1, -1)
+                cv2.rectangle(pos_mask[:, :, GREEN_IND], low, high, 1, -1)
                 #pos_mask[max(0, inds[1] - r):min(inds[1]+r+1, pos_mask.shape[0]-1), max(0, inds[0]-r):min(inds[0]+r+1, pos_mask.shape[1]-1), GREEN_IND] = 1
             elif color == 'r':
-                cv2.rectangle(pos_mask[:, :, RED_IND], (inds[0]-r, inds[1]-r), (inds[0]+r, inds[1]+r), 1, -1)
+                cv2.rectangle(pos_mask[:, :, RED_IND], low, high, 1, -1)
                 #pos_mask[max(0, inds[1] - r):min(inds[1]+r+1, pos_mask.shape[0]-1), max(0, inds[0]-r):min(inds[0]+r+1, pos_mask.shape[1]-1), RED_IND] = 1
             #cv2.circle(pos_mask, , , 1, thickness = -1)
 
