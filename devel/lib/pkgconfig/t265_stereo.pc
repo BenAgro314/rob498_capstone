@@ -1,8 +1,1 @@
-prefix=/home/jetson/catkin_ws/devel
-
-Name: t265_stereo
-Description: Description of t265_stereo
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
+/home/jetson/catkin_ws/devel/.private/t265_stereo/lib/pkgconfig/t265_stereo.pc

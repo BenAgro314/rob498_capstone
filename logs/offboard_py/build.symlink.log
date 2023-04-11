@@ -1,3 +1,3 @@
-Linked: (/home/jetson/catkin_ws/devel/.private/offboard_py/lib/pkgconfig/offboard_py.pc, /home/jetson/catkin_ws/devel/lib/pkgconfig/offboard_py.pc)
-Linked: (/home/jetson/catkin_ws/devel/.private/offboard_py/share/offboard_py/cmake/offboard_pyConfig.cmake, /home/jetson/catkin_ws/devel/share/offboard_py/cmake/offboard_pyConfig.cmake)
-Linked: (/home/jetson/catkin_ws/devel/.private/offboard_py/share/offboard_py/cmake/offboard_pyConfig-version.cmake, /home/jetson/catkin_ws/devel/share/offboard_py/cmake/offboard_pyConfig-version.cmake)
+Symlinking /home/jetson/catkin_ws/devel/lib/pkgconfig/offboard_py.pc
+Symlinking /home/jetson/catkin_ws/devel/share/offboard_py/cmake/offboard_pyConfig.cmake
+Symlinking /home/jetson/catkin_ws/devel/share/offboard_py/cmake/offboard_pyConfig-version.cmake

@@ -4,5 +4,5 @@ PROJECT_PKG_CONFIG_INCLUDE_DIRS = "".split(';') if "" != "" else []
 PROJECT_CATKIN_DEPENDS = "".replace(';', ' ')
 PKG_CONFIG_LIBRARIES_WITH_PREFIX = "".split(';') if "" != "" else []
 PROJECT_NAME = "optical_flow"
-PROJECT_SPACE_DIR = "/home/jetson/catkin_ws/devel"
+PROJECT_SPACE_DIR = "/home/jetson/catkin_ws/devel/.private/optical_flow"
 PROJECT_VERSION = "0.0.0"

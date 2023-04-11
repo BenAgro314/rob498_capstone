@@ -68,7 +68,7 @@ set(optical_flow_CONFIG_INCLUDED TRUE)
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
   set(optical_flow_SOURCE_PREFIX /home/jetson/catkin_ws/src/optical_flow)
-  set(optical_flow_DEVEL_PREFIX /home/jetson/catkin_ws/devel)
+  set(optical_flow_DEVEL_PREFIX /home/jetson/catkin_ws/devel/.private/optical_flow)
   set(optical_flow_INSTALL_PREFIX "")
   set(optical_flow_PREFIX ${optical_flow_DEVEL_PREFIX})
 else()

@@ -1,8 +1,1 @@
-prefix=/home/jetson/catkin_ws/devel
-
-Name: optical_flow
-Description: Description of optical_flow
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
+/home/jetson/catkin_ws/devel/.private/optical_flow/lib/pkgconfig/optical_flow.pc

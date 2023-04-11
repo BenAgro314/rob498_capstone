@@ -68,7 +68,7 @@ set(t265_stereo_CONFIG_INCLUDED TRUE)
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
   set(t265_stereo_SOURCE_PREFIX /home/jetson/catkin_ws/src/t265_stereo)
-  set(t265_stereo_DEVEL_PREFIX /home/jetson/catkin_ws/devel)
+  set(t265_stereo_DEVEL_PREFIX /home/jetson/catkin_ws/devel/.private/t265_stereo)
   set(t265_stereo_INSTALL_PREFIX "")
   set(t265_stereo_PREFIX ${t265_stereo_DEVEL_PREFIX})
 else()

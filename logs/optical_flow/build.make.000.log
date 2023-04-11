@@ -1,0 +1,9 @@
+[35m[1mScanning dependencies of target optical_flow_node[0m
+[ 14%] [32mBuilding CXX object CMakeFiles/optical_flow_node.dir/src/flow_px4.cpp.o[0m
+[ 42%] [32mBuilding CXX object CMakeFiles/optical_flow_node.dir/src/main.cpp.o[0m
+[ 42%] [32mBuilding CXX object CMakeFiles/optical_flow_node.dir/src/flow_opencv.cpp.o[0m
+[ 57%] [32mBuilding CXX object CMakeFiles/optical_flow_node.dir/src/optical_flow.cpp.o[0m
+[ 71%] [32mBuilding CXX object CMakeFiles/optical_flow_node.dir/src/px4flow.cpp.o[0m
+[ 85%] [32mBuilding CXX object CMakeFiles/optical_flow_node.dir/src/trackFeatures.cpp.o[0m
+[100%] [32m[1mLinking CXX executable /home/jetson/catkin_ws/devel/.private/optical_flow/lib/optical_flow/optical_flow_node[0m
+[100%] Built target optical_flow_node

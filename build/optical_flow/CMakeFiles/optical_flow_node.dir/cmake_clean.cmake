@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "/home/jetson/catkin_ws/devel/lib/optical_flow/optical_flow_node"
-  "/home/jetson/catkin_ws/devel/lib/optical_flow/optical_flow_node.pdb"
+  "/home/jetson/catkin_ws/devel/.private/optical_flow/lib/optical_flow/optical_flow_node"
+  "/home/jetson/catkin_ws/devel/.private/optical_flow/lib/optical_flow/optical_flow_node.pdb"
   "CMakeFiles/optical_flow_node.dir/src/flow_opencv.cpp.o"
   "CMakeFiles/optical_flow_node.dir/src/flow_px4.cpp.o"
   "CMakeFiles/optical_flow_node.dir/src/main.cpp.o"
