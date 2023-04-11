@@ -10,7 +10,7 @@ from jetcam.csi_camera import CSICamera
 if __name__ == '__main__':
     # Set the capture resolution (modify as needed)
     capture_width = 1080
-    capture_height = 1080
+    capture_height = 720
 
     camera = CSICamera(width=capture_width, height=capture_height, capture_device=0)
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
             # If the "c" key is pressed, capture and save the image
             if key == ord("c"):
                 # Save the image to disk
-                cv2.imwrite(f"images_{capture_width}_{capture_height}/{image_counter}.png", frame)
+                cv2.imwrite(f"images/{image_counter}.png", frame)
                 
                 # Increment the image counter
                 image_counter += 1
