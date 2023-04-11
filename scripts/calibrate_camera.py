@@ -3,11 +3,11 @@ import numpy as np
 import glob
 
 # Define the size of the checkerboard pattern (number of inner corners)
-num_corners_x = 6  # Number of inner corners along the x-axis
+num_corners_x = 5  # Number of inner corners along the x-axis
 num_corners_y = 8  # Number of inner corners along the y-axis
 
 # Define the width of each square in the checkerboard (in meters or any other real-world unit)
-square_width = 0.108  # Example value
+square_width = 0.0275  # Example value
 
 # Define the object points (3D world points) for the checkerboard pattern
 objp = np.zeros((num_corners_x * num_corners_y, 3), np.float32)
@@ -18,7 +18,7 @@ objpoints = []  # 3D points in real world space
 imgpoints = []  # 2D points in image plane
 
 # Load the images of the checkerboard pattern
-images = glob.glob('/home/agrobenj/catkin_ws/images/imx219_calib_v2/*.png')
+images = glob.glob('images/*.png')
 
 #criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
