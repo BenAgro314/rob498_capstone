@@ -39,6 +39,7 @@ class RobDroneControl():
         self.srv_land = rospy.Service(name + '/comm/land', Empty, self.land_cb)
         self.srv_abort = rospy.Service(name + '/comm/abort', Empty, self.abort_cb)
         self.srv_home = rospy.Service(name + '/comm/home', Empty, self.home_cb)
+        self.srv_spin = rospy.Service(name + '/comm/spin', Empty, self.spin_cb)
 
         #self.broadcaster = tf2_ros.TransformBroadcaster()
 
@@ -232,6 +233,15 @@ class RobDroneControl():
         self.received_waypoints = None
         self.publish_current_queue()
         self.waypoint_queue_lock.release()
+        return EmptyResponse()
+
+    def spin_cb(self, request: Empty):
+        x, y, _, _, _, yaw = get_config_from_pose_stamped(self.current_t_map_dots)
+
+        for angle in np.linspace(yaw, yaw - 2*np.pi, 4):
+            self.waypoint_queue_push(config_to_pose_stamped(x, y, self.launch_height, angle, self.current_t_map_dots.header.frame_id))
+        self.publish_current_queue()
+
         return EmptyResponse()
 
     def launch_cb(self, request: Empty):
