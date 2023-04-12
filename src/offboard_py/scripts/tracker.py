@@ -135,7 +135,7 @@ class Tracker:
         self.logits = np.clip(self.logits, a_min = -2, a_max = 10)
 
         mask = np.logical_or(self.logits[..., 0] > 0, self.logits[..., 1] > 0)
-        #mask = scale_image(mask.astype(np.uint8), 0.5)
+        mask = scale_image(mask.astype(np.uint8), 2.0/3.0)
         os.system('cls' if os.name == 'nt' else 'clear')
         print('-'*mask.shape[1])
         for c in range(mask.shape[1] -1, -1, -1):
