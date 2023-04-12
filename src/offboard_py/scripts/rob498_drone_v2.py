@@ -374,7 +374,6 @@ class RobDroneControl():
         print(f"{Colors.GREEN}RECIEVED WAYPOINTS{Colors.RESET}")
         self.received_waypoints = msg
         self.test_task_3()
-        self.test_ready=False
 
     def can_launch(self):
         return self.current_t_map_dots.pose.position.z < self.on_ground_ths and self.len_waypoint_queue == 0
