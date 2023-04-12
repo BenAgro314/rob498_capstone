@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from offboard_py.scripts.utils import get_config_from_transformation, pointcloud2_to_numpy, quaternion_to_euler, scale_image, transform_to_numpy
+import os
 import rospy
 import cv2
 import tf2_ros
@@ -135,7 +136,8 @@ class Tracker:
 
         mask = np.logical_or(self.logits[..., 0] > 0, self.logits[..., 1] > 0)
         mask = scale_image(mask.astype(np.uint8), 0.5)
-        print('-'*20)
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print('-'*mask.shape[1])
         for c in range(mask.shape[1] -1, -1, -1):
             for r in range(mask.shape[0] -1, -1, -1):
                 if mask[r][c] > 0:
@@ -144,7 +146,7 @@ class Tracker:
                     print(".", end = '')
                 if r == 0:
                     print()
-        print('-'*20)
+        print('-'*mask.shape[1])
 
         self.publish_occupancy_grid(self.logits[..., GREEN_IND], self.green_occ_map_pub)
         self.publish_occupancy_grid(self.logits[..., RED_IND], self.red_occ_map_pub)
