@@ -58,10 +58,7 @@ class RobDroneControl():
         #self.controller = Controller() 
         self.local_planner = LocalPlanner()
 
-        self.state_sub = rospy.Subscriber("mavros/state", State, callback = self.state_cb)
-        self.setpoint_position_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
-        #self.setpoint_vel_pub = rospy.Publisher("mavros/setpoint_velocity/cmd_vel_unstamped", Twist, queue_size=10)
-        self.local_pose_sub = rospy.Subscriber("mavros/local_position/pose", PoseStamped, callback = self.pose_cb)
+        
 
         self.curr_t_map_dots_pub = rospy.Publisher("curr_t_map_dots", PoseStamped, queue_size=10)
         self.curr_waypoint_pub = rospy.Publisher("curr_waypoint", PoseStamped, queue_size=10)
@@ -74,6 +71,11 @@ class RobDroneControl():
         # map: the frame used by the px4
         # base: the frame attached to the px4
         self.t_map_global: np.array = np.eye(4) # assume no transformation at first
+
+        self.state_sub = rospy.Subscriber("mavros/state", State, callback = self.state_cb)
+        self.setpoint_position_pub = rospy.Publisher("mavros/setpoint_position/local", PoseStamped, queue_size=10)
+        #self.setpoint_vel_pub = rospy.Publisher("mavros/setpoint_velocity/cmd_vel_unstamped", Twist, queue_size=10)
+        self.local_pose_sub = rospy.Subscriber("mavros/local_position/pose", PoseStamped, callback = self.pose_cb)
         
         # for viz / outward coms
         self.current_path_pub = rospy.Publisher("rob498/waypoint_queue", Path, queue_size=10)
