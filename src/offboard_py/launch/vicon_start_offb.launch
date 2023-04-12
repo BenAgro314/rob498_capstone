@@ -23,7 +23,7 @@
 
 
 	<!-- Our node to control the drone -->
-	<node pkg="offboard_py" type="rob498_drone.py" name="rob498_drone_py" required="true" output="screen" />
+	<node pkg="offboard_py" type="rob498_drone_v2.py" name="rob498_drone_py" required="true" output="screen" />
 
 
 	<!-- vicon bridge -->
@@ -37,4 +37,13 @@
 	<!-- Launch static transform publishers -->
 	<node pkg="tf" type="static_transform_publisher" name="tf_odom_cameraOdom"
 			args="0 0 0 0 0 0 odom camera_odom_frame 1000"/>
+
+	<!-- ct4 stuff -->
+	<node pkg="offboard_py" type="new_camera_pub_test.py" name="imx219_publish_py" required="true" output="screen" />
+	<node name="obstacle_detector" pkg="offboard_py" type="obstacle_detection.py" output="screen"/>
+
+	<node pkg="tf" type="static_transform_publisher" name="base_link_to_imx219"
+			args="0 0 0 0 1.5707 1.5707 base_link imx219 1000"/>
+
+	<node name="tracker" pkg="offboard_py" type="tracker.py" output="screen"/>
 </launch>
