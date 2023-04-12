@@ -173,7 +173,7 @@ class RobDroneControl():
                 with self.current_pose_lock:
                     t_global_dots = transform_stamped_to_numpy(vicon_pose)
                     self.t_map_global = pose_stamped_to_numpy(self.current_t_map_dots) @ np.linalg.inv(t_global_dots)
-        self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_map_global, frame_id='map', child_frame_id='global', time=vicon_pose.header.stamp))
+        self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_map_global, frame_id='map', child_frame_id='global', rospy.Time.now()))
 
     def waypoint_queue_push_no_lock(self, pose: PoseStamped, duration = None):
         if duration is None:
