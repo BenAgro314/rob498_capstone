@@ -17,8 +17,8 @@ from mavros_msgs.msg import State
 from std_srvs.srv import Empty, EmptyResponse
 from nav_msgs.msg import Path
 import message_filters
-import tf2_ros
 from visualization_msgs.msg import Marker
+import tf2_ros
 
 USE_SLERP=False
 USE_ORIENTATION=True
@@ -106,6 +106,7 @@ class RobDroneControl():
             ]
         )
         #self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_dots_base, frame_id='dots_link', child_frame_id='base_link'))
+        self.broadcaster = tf2_ros.TransformBroadcaster()
 
         self.nearest_obstacle = None
         #self.image_sub= rospy.Subscriber("/cylinder_marker", Marker, callback = self.obs_callback)
@@ -172,7 +173,7 @@ class RobDroneControl():
                 with self.current_pose_lock:
                     t_global_dots = transform_stamped_to_numpy(vicon_pose)
                     self.t_map_global = pose_stamped_to_numpy(self.current_t_map_dots) @ np.linalg.inv(t_global_dots)
-        #self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_map_global, frame_id='map', child_frame_id='global'))
+        self.broadcaster.sendTransform(numpy_to_transform_stamped(self.t_map_global, frame_id='map', child_frame_id='global', time=vicon_pose.header.stamp))
 
     def waypoint_queue_push_no_lock(self, pose: PoseStamped, duration = None):
         if duration is None:
