@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from offboard_py.scripts.utils import numpy_to_pointcloud2, quaternion_to_euler
+from offboard_py.scripts.utils import numpy_to_pointcloud2, quaternion_to_euler, scale_image
 import rospy
 import cv2
 import tf2_ros
@@ -22,12 +22,6 @@ def undistort_image(img, K, D):
     img = cv2.undistort(img, K, D)
     return img
 
-def scale_image(img, scale):
-    width = int(img.shape[1] * scale)
-    height = int(img.shape[0] * scale)
-    dim = (width, height)
-    resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
-    return resized
 
 def get_iou(bb1, bb2):
     """

@@ -1,5 +1,6 @@
 import rospy
 import numpy as np
+import cv2
 from tf.transformations import quaternion_matrix, quaternion_from_matrix
 import os
 import yaml
@@ -593,3 +594,10 @@ def pointcloud2_to_numpy(pointcloud, extra_keys = None):
         extra_keys = tuple()
     points = np.array(list(pc2.read_points(pointcloud, field_names=('x', 'y', 'z') + extra_keys)))
     return points
+
+def scale_image(img, scale):
+    width = int(img.shape[1] * scale)
+    height = int(img.shape[0] * scale)
+    dim = (width, height)
+    resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+    return resized
