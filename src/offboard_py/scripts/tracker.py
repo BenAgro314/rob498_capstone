@@ -7,6 +7,7 @@ import cv2
 import tf2_ros
 import matplotlib.pyplot as plt
 import tf.transformations
+from std_srvs.srv import Empty, EmptyResponse
 from sensor_msgs.msg import PointCloud2
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 import numpy as np
@@ -46,6 +47,17 @@ class Tracker:
         self.fov = (-np.pi/8, np.pi/8)
         self.range = 10
         
+        self.freeze_map = False
+        self.srv_launch = rospy.Service('/comm/freeze_map', Empty, self.freeze_map_cb)
+        self.srv_launch = rospy.Service('/comm/un_freeze_map', Empty, self.un_freeze_map_cb)
+
+    def freeze_map_cb(self, request: Empty):
+        self.freeze_map = True
+        return EmptyResponse()
+
+    def un_freeze_map_cb(self, request: Empty):
+        self.freeze_map = False
+        return EmptyResponse()
 
 
     def publish_occupancy_grid(self, logits, pub):
@@ -74,6 +86,8 @@ class Tracker:
 
     def cyl_callback(self, msg):
         #pos = msg.pose.position
+        if self.freeze_map:
+            return
 
         pos_mask = np.zeros_like(self.logits, dtype = np.uint8)
         neg_mask = np.zeros_like(self.logits[:, :, 0], dtype = np.uint8)

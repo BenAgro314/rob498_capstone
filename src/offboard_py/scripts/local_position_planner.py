@@ -68,15 +68,11 @@ class LocalPlanner:
         self.blur_dist = 2.0
         self.current_path = None
 
-        self.freeze_map = False
 
-        self.srv_launch = rospy.Service('/comm/freeze_map', Empty, self.freeze_map_cb)
         self.green_map_sub= rospy.Subscriber("green_occ_map", OccupancyGrid, callback = self.green_map_callback)
         self.red_map_sub= rospy.Subscriber("red_occ_map", OccupancyGrid, callback = self.red_map_callback)
 
-    def freeze_map_cb(self, request: Empty):
-        self.freeze_map = True
-        return EmptyResponse()
+    
 
     def point_to_ind(self, pt):
         # pt.shape == (3, 1) or (2, 1)
@@ -105,8 +101,6 @@ class LocalPlanner:
         return path_msg
 
     def red_map_callback(self, map_msg):
-        if self.freeze_map:
-            return
         with self.red_map_lock:
             self.map_width = map_msg.info.width
             self.map_height = map_msg.info.height
@@ -115,8 +109,6 @@ class LocalPlanner:
             self.red_map = np.array(map_msg.data, dtype=np.uint8).reshape((self.map_height, self.map_width, 1))
 
     def green_map_callback(self, map_msg):
-        if self.freeze_map:
-            return
         with self.green_map_lock:
             self.map_width = map_msg.info.width
             self.map_height = map_msg.info.height
@@ -182,7 +174,7 @@ class LocalPlanner:
             x1, y1, z1, _, _, yaw1 = get_config_from_pose_stamped(p1)
             x2, y2, z2, _, _, yaw2 = get_config_from_pose_stamped(p2)
             dyaw = np.abs(shortest_signed_angle(yaw1, yaw2))
-            dd = np.sqrt((x1 - x2)**2  + (y1 - y2)**2) # + (z1 - z2)**2)
+            dd = 0 #np.sqrt((x1 - x2)**2  + (y1 - y2)**2) # + (z1 - z2)**2)
             n = max(1, int((dd / 0.5)) + int((dyaw / np.deg2rad(5))))
             for i in range(n):
                 p = slerp_pose(p1.pose, p2.pose, rospy.Time(0), rospy.Time(1), rospy.Time((i+1)/n), 'map')
