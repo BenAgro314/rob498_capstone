@@ -206,7 +206,6 @@ class LocalPlanner:
                 return
             red_occ_map = self.red_map.copy()[:, :, 0]
 
-
         red_occ_map = (red_occ_map > 50).astype(np.uint8)
         green_occ_map = (green_occ_map > 50).astype(np.uint8)
 
