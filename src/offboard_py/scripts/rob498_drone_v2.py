@@ -39,7 +39,7 @@ class RobDroneControl():
         self.srv_land = rospy.Service(name + '/comm/land', Empty, self.land_cb)
         self.srv_abort = rospy.Service(name + '/comm/abort', Empty, self.abort_cb)
         self.srv_home = rospy.Service(name + '/comm/home', Empty, self.home_cb)
-        self.srv_spin = rospy.Service(name + '/comm/spin', Empty, self.spin_cb)
+        self.srv_spin = rospy.Service('/comm/spin', Empty, self.spin_cb)
 
         #self.broadcaster = tf2_ros.TransformBroadcaster()
 
