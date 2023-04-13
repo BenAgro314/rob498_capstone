@@ -12,16 +12,16 @@ def publish_images():
     rospy.init_node('imx219_publisher', anonymous=True)
 
     # Create a publisher for the image topic
-    image_pub = rospy.Publisher('imx219_image', Image, queue_size=10)
+    image_pub = rospy.Publisher('imx219/image', Image, queue_size=10)
 
     # Create a CvBridge object for converting images
     bridge = CvBridge()
 
     # Set the capture resolution (modify as needed)
-    capture_width = 540
-    capture_height = 540
+    capture_width = 1080
+    capture_height = 1080
 
-    fps = 5
+    fps = 30
     # Initialize the CSICamera from the jetcam package
     camera = CSICamera(width=capture_width, height=capture_height, capture_fps=fps)
     rate = rospy.Rate(fps)
