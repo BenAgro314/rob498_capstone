@@ -43,7 +43,7 @@ class Tracker:
         
         self.radius=0.15
         self.alpha = 1.0
-        self.beta = -0.1
+        self.beta = -0.05
         self.fov = (-np.pi/8, np.pi/8)
         self.range = 10
         
