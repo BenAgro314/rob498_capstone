@@ -18,7 +18,7 @@ objpoints = []  # 3D points in real world space
 imgpoints = []  # 2D points in image plane
 
 # Load the images of the checkerboard pattern
-images = glob.glob('images/*.png')
+images = glob.glob('images_1080_1080/*.png')
 
 #criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 

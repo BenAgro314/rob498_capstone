@@ -10,7 +10,7 @@ from jetcam.csi_camera import CSICamera
 if __name__ == '__main__':
     # Set the capture resolution (modify as needed)
     capture_width = 1080
-    capture_height = 720
+    capture_height = 1080
 
     camera = CSICamera(width=capture_width, height=capture_height, capture_device=0)
 
@@ -29,7 +29,8 @@ if __name__ == '__main__':
             frame = camera.value
             
             # Display the frame in the window
-            cv2.imshow("Camera Feed", frame)
+            show_frame = cv2.resize(frame, (540, 540))
+            cv2.imshow("Camera Feed", show_frame)
             
             # Wait for a key press (1 millisecond)
             key = cv2.waitKey(1) & 0xFF
