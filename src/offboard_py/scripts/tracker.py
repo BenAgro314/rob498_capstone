@@ -148,7 +148,7 @@ class Tracker:
 
         self.logits[neg_mask] += self.beta
         self.logits[pos_mask] += self.alpha
-        self.logits = np.clip(self.logits, a_min = -2, a_max = 10)
+        self.logits = np.clip(self.logits, a_min = -4, a_max = 20)
 
         mask = np.logical_or(self.logits[..., 0] > 0, self.logits[..., 1] > 0)
         mask = scale_image(mask.astype(np.uint8), 2.0/3.0)
