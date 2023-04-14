@@ -14,7 +14,7 @@ class ViconBridge():
         self.last_vicon_update = rospy.Time.now()
         self.vicon_pose_sub = rospy.Subscriber("vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback = self.vicon_update)
         self.realsense_pose_sub = rospy.Subscriber("camera/odom/sample_throttled", Odometry, callback = self.realsense_update) # fail safe
-        self.min_vicon_rate = 20.0
+        self.min_vicon_rate = 10.0
 
     def vicon_update(self, transform: TransformStamped):
         odom = transform_stamped_to_odometry(transform)
