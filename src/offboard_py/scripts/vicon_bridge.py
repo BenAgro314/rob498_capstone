@@ -11,7 +11,7 @@ class ViconBridge():
     def __init__(self):
         self.mavros_vision_pose_pub = rospy.Publisher("mavros/odometry/out", Odometry, queue_size=10)
         #local_pose_sub = rospy.Subscriber("mavros/local_position/pose", PoseStamped, callback=print_pose)
-        self.last_vicon_update = None
+        self.last_vicon_update = rospy.Time.now()
         self.vicon_pose_sub = rospy.Subscriber("vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback = self.vicon_update)
         self.realsense_pose_sub = rospy.Subscriber("camera/odom/sample_throttled", Odometry, callback = self.realsense_update) # fail safe
         self.min_vicon_rate = 20.0
@@ -25,7 +25,7 @@ class ViconBridge():
         self.last_vicon_update = odom.header.stamp
 
     def realsense_update(self, odom: Odometry):
-        if (self.last_vicon_update is not None) and (rospy.Time.now().to_sec() - self.last_vicon_update.to_sec()) > 1.0/self.min_vicon_rate:
+        if rospy.Time.now().to_sec() - self.last_vicon_update.to_sec() > 1.0/self.min_vicon_rate:
             odom.header.frame_id = "camera_odom_frame"
             odom.child_frame_id = "camera_pose_frame"
             odom.pose.covariance = [0] * 36
