@@ -13,7 +13,7 @@ if len(sys.argv) != 3:
 
 bag_file = sys.argv[1]
 output_path = sys.argv[2]
-image_topic = '/camera/fisheye1/image_raw'
+image_topic = '/imx219_image'
 
 if not os.path.exists(output_path):
     os.makedirs(output_path)
